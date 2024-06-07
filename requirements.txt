@@ -1,0 +1,48 @@
+# Flask
+click>=7.0
+Flask==3.0.2
+Werkzeug==3.0.1
+
+# Database
+Flask-SQLAlchemy==3.1.1
+psycopg2-binary==2.9.9
+SQLAlchemy==2.0.29
+pymysql==1.1.0
+
+# Migrations
+Flask-Migrate==4.0.7
+
+# Forms
+email-validator==2.1.1
+Flask-WTF==1.2.1
+WTForms==3.1.2
+
+# Deployment
+gevent==24.2.1
+gunicorn>=19.9.0
+supervisor==4.2.5
+
+# Flask Static Digest
+Flask-Static-Digest==0.4.0
+
+# Auth
+Flask-Bcrypt==1.0.1
+Flask-Login==0.6.3
+
+# Caching
+Flask-Caching>=2.0.2
+
+# Debug toolbar
+Flask-DebugToolbar==0.14.1
+
+# Environment variable parsing
+environs==11.0.0
+
+celery>=5.2.3,<6.0
+redis==5.0.3
+requests==2.31.0
+tornado==6.4
+python-crontab>=3.0.0
+cron-descriptor>=1.4.3
+pytz
+tzdata
