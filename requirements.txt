@@ -46,3 +46,5 @@ python-crontab>=3.0.0
 cron-descriptor>=1.4.3
 pytz
 tzdata
+faker==25.6.0
+asgiref==3.8.1

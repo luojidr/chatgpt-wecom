@@ -3,8 +3,8 @@ import datetime as dt
 from flask_login import UserMixin
 from sqlalchemy.ext.hybrid import hybrid_property
 
-from fkcookiecutter.core.database import Column, PkModel, db, reference_col, relationship
-from fkcookiecutter.core.extensions import bcrypt
+from wecom.core.database import Column, PkModel, db, reference_col, relationship
+from wecom.core.extensions import bcrypt
 
 
 class Role(PkModel):

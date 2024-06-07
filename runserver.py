@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Create an application instance."""
 
-from fkcookiecutter.app import create_app
+from wecom.app import create_app
 
 app = create_app()
 

@@ -14,6 +14,8 @@ env.read_env()
 ENV = env.str("FLASK_ENV", default="production")
 DEBUG = ENV == "development"
 
+WTF_CSRF_ENABLED = False
+
 SECRET_KEY = env.str("SECRET_KEY", default='fr3hhj&6k2b_s&cvk(=(!#wcotx1nkcgkp%0^%no2xg#xr9^n!')
 SEND_FILE_MAX_AGE_DEFAULT = env.int("SEND_FILE_MAX_AGE_DEFAULT", default=None)
 BCRYPT_LOG_ROUNDS = env.int("BCRYPT_LOG_ROUNDS", default=13)

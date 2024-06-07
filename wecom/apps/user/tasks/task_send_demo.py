@@ -1,6 +1,6 @@
 import logging
 
-from fkcookiecutter.celery_helper.app import celery_app
+from wecom.celery_helper.app import celery_app
 
 
 @celery_app.task

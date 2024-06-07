@@ -25,7 +25,7 @@ def test(coverage):
 
     args = [TEST_PATH, "--verbose"]
     if coverage:
-        args.append("--cov=fkcookiecutter")
+        args.append("--cov=wecom")
     rv = pytest.main(args)
     exit(rv)
 

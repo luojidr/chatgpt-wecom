@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 """The app module, containing the app factory function."""
-import logging
 import sys
+import logging
+from logging.handlers import RotatingFileHandler
 from importlib import import_module
 
 from flask import Flask, render_template
 
-from .apps import user
+from .apps import user, worktool
 from .core import commands
 from .core.extensions import (
     bcrypt,
@@ -53,6 +54,7 @@ def register_extensions(app):
 def register_blueprints(app):
     """Register Flask blueprints."""
     app.register_blueprint(user.views.blueprint)
+    app.register_blueprint(worktool.views.blueprint)
 
     # Register celery_helper.beat package
     beat_pkg = import_module(__package__ + ".celery_helper.beat")
@@ -95,6 +97,19 @@ def register_commands(app):
 
 def configure_logger(app):
     """Configure loggers."""
-    handler = logging.StreamHandler(sys.stdout)
-    if not app.logger.handlers:
-        app.logger.addHandler(handler)
+    formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    # 创建一个RotatingFileHandler，当文件达到200MB时分割，最多保留5个备份文件
+    file_handler = RotatingFileHandler('app.log', maxBytes=10 * 1024 * 1024, backupCount=5)
+    file_handler.setFormatter(formatter)
+
+    # 创建一个StreamHandler用于输出到控制台
+    stream_handler = logging.StreamHandler()
+    stream_handler.setFormatter(formatter)
+
+    # 设置日志级别为INFO
+    file_handler.setLevel(logging.INFO)
+    stream_handler.setLevel(logging.INFO)
+
+    # 添加处理器到日志记录器
+    app.logger.addHandler(file_handler)
+    app.logger.addHandler(stream_handler)
