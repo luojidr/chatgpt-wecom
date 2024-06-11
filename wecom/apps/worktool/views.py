@@ -17,7 +17,7 @@ def healthcheck():
 def callback_wecom():
     data = request.json
     print("callback cc => data:", data)
-    logger.log("callback => data: %s", data)
+    logger.info("callback => data: %s", data)
 
     # send_text_message()
 
