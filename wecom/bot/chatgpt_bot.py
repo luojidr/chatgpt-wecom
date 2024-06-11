@@ -3,8 +3,9 @@
 import time
 import json
 
-import openai
 import requests
+import openai
+from openai import OpenAI
 
 from .chatgpt_session import ChatGPTSession
 from .openai_image import OpenAIImage
@@ -12,17 +13,29 @@ from .session_manager import SessionManager
 from ..core.token_bucket import TokenBucket
 from ..core.log import logger
 from ..core.exceptions import RateLimitError
-from .context import ContextType
+from .context import ContextType, Context, Reply
 
 from config import settings
 
 
-class ChatGPTBot(OpenAIImage):
+class Bot:
+    def __init__(self):
+        self.api_key = settings.OPENAI_API_KEY
+        self.api_base = settings.OPENAI_API_BASE
+
+    def reply(self, query, context: Context = None) -> Reply:
+        """
+        bot auto-reply content
+        :param query: received message
+        :param context: context instance
+        :return: reply content
+        """
+        raise NotImplementedError
+
+
+class ChatGPTBot(Bot, OpenAIImage):
     def __init__(self):
         super().__init__()
-
-        openai.api_key = settings.OPENAI_API_KEY
-        openai.api_base = settings.OPENAI_API_BASE
         proxy = settings.OPENAI_PROXY
 
         if proxy:
@@ -32,6 +45,8 @@ class ChatGPTBot(OpenAIImage):
 
         self.model = settings.OPENAI_MODEL or "gpt-3.5-turbo"
         self.sessions = SessionManager(ChatGPTSession, model=self.model)
+
+        self.client = OpenAI(api_key=self.api_key, base_url=self.api_base)
         self.args = {
             "model": self.model,  # 对话模型的名称
             "temperature": 0.7,  # 值在[0,1]之间，越大表示回复越具有不确定性
@@ -112,7 +127,7 @@ class ChatGPTBot(OpenAIImage):
             if args is None:
                 args = self.args
 
-            response = openai.chat.completions.create(model=self.model, messages=session.messages, **args)
+            response = self.client.chat.completions.create(model=self.model, messages=session.messages, **args)
             logger.info("[CHATGPT] response={}".format(json.dumps(response, ensure_ascii=False, indent=4)))
 
             return {

@@ -11,7 +11,7 @@ from config import settings
 # OPENAI提供的画图接口
 class OpenAIImage(object):
     def __init__(self):
-        openai.api_key = settings.OPENAI_API_KEY
+        self.api_key = settings.OPENAI_API_KEY
         if settings.DALLE_RATE_LIMIT:
             self.tb4dalle = TokenBucket(settings.DALLE_RATE_LIMIT or 20)
 

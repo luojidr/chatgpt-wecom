@@ -52,3 +52,12 @@ class Context:
 
     def __str__(self):
         return "Context(type={}, content={}, kwargs={})".format(self.type, self.content, self.kwargs)
+
+
+class Reply:
+    def __init__(self, type: ContextType = None, content=None):
+        self.type = type
+        self.content = content
+
+    def __str__(self):
+        return "Reply(type={}, content={})".format(self.type, self.content)
