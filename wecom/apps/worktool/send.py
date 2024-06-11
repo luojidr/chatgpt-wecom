@@ -27,7 +27,8 @@ def send_text_message(query, receiver):
     context = get_context(ctype=ContextType.TEXT, content=query, session_id=receiver)
     reply: Reply = bot.reply(query=query, context=context)
 
-    api_path = "/wework/sendRawMessage"
+    api_path = settings.WT_API_BASE + "/wework/sendRawMessage"
+    params = dict(robotId=settings.WT_ROBOTID)
     payload = dict(
         socketType=2,
         list=[
@@ -45,7 +46,7 @@ def send_text_message(query, receiver):
 
     logger.info("send_text_message => payload: %s", payload)
     try:
-        r = requests.post(settings.WT_API_BASE + api_path, data=json.dumps(payload), headers=headers)
+        r = requests.post(api_path, params=params, data=json.dumps(payload), headers=headers)
         logger.info("send_text_message => result: %s", r.json())
     except Exception as e:
         logger.error("send_text_message error: %s", e)
