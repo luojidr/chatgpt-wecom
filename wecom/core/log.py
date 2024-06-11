@@ -14,7 +14,7 @@ def get_logger(app=None):
         os.makedirs(log_path, exist_ok=True)
 
     filename = os.path.join(log_path, "app.log")
-    formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    formatter = logging.Formatter("%(asctime)s - %(name)s -%(filename)s - %(lineno)d - %(levelname)s - %(message)s")
 
     # 创建一个StreamHandler用于输出到控制台
     stream_handler = logging.StreamHandler()
