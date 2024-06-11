@@ -9,4 +9,4 @@ app = create_app()
 if __name__ == '__main__':
     # flask --app runserver db [init, migrate, upgrade, ...]
     with app.app_context():
-        app.run(host='127.0.0.1', port=9999, debug=True)  # 非命令启动
+        app.run(host='0.0.0.0', port=9999, debug=True)  # 非命令启动
