@@ -1,9 +1,8 @@
 from flask import Blueprint, request, jsonify
 from flask_login import login_required
 
-from flask import current_app
-
 from .send import send_text_message
+from ...core.log import logger
 
 blueprint = Blueprint("wecom", __name__, url_prefix="/wecom", static_folder="../static")
 
@@ -17,7 +16,8 @@ def healthcheck():
 @blueprint.route('/callback', methods=['POST'])
 def callback_wecom():
     data = request.json
-    current_app.logger.info("callback => data: %s", data)
+    print("callback cc => data:", data)
+    logger.log("callback => data: %s", data)
 
     # send_text_message()
 
