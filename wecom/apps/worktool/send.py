@@ -2,6 +2,7 @@ import json
 import traceback
 
 import requests
+from fake_useragent import UserAgent
 from tenacity import retry, stop_after_attempt
 
 from config import settings
@@ -27,7 +28,7 @@ def send_text_message(query, receiver):
     reply: Reply = bot.reply(query=query, context=context)
 
     api_path = "/wework/sendRawMessage"
-    data = dict(
+    payload = dict(
         socketType=2,
         list=[
             {
@@ -37,9 +38,15 @@ def send_text_message(query, receiver):
             }
         ]
     )
+    headers = {
+        "User-Agent": UserAgent().random,
+        "Content-Type": "application/json"
+    }
 
+    logger.info("send_text_message => payload: %s", payload)
     try:
-        requests.post(settings.WT_API_BASE + api_path, data=json.dumps(data))
+        r = requests.post(settings.WT_API_BASE + api_path, data=json.dumps(payload), headers=headers)
+        logger.info("send_text_message => result: %s", r.json())
     except Exception as e:
         logger.error("send_text_message error: %s", e)
         logger.error(traceback.format_exc())
