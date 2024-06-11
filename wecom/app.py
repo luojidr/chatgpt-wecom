@@ -9,6 +9,7 @@ from flask import Flask, render_template
 
 from .apps import user, worktool
 from .core import commands
+from .core.log import get_logger
 from .core.extensions import (
     bcrypt,
     cache,
@@ -97,19 +98,5 @@ def register_commands(app):
 
 def configure_logger(app):
     """Configure loggers."""
-    formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-    # 创建一个RotatingFileHandler，当文件达到200MB时分割，最多保留5个备份文件
-    file_handler = RotatingFileHandler('app.log', maxBytes=10 * 1024 * 1024, backupCount=5)
-    file_handler.setFormatter(formatter)
+    get_logger(app=app)
 
-    # 创建一个StreamHandler用于输出到控制台
-    stream_handler = logging.StreamHandler()
-    stream_handler.setFormatter(formatter)
-
-    # 设置日志级别为INFO
-    file_handler.setLevel(logging.INFO)
-    stream_handler.setLevel(logging.INFO)
-
-    # 添加处理器到日志记录器
-    app.logger.addHandler(file_handler)
-    app.logger.addHandler(stream_handler)

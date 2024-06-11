@@ -2,6 +2,8 @@
 """Database module, including the SQLAlchemy database object and DB-related utilities."""
 from typing import Optional, Type, TypeVar
 
+from sqlalchemy import func
+
 from .compat import basestring
 from .extensions import db
 
@@ -67,6 +69,13 @@ class PkModel(Model):
         ):
             return cls.query.session.get(cls, int(record_id))
         return None
+
+
+class BaseModel(Model):
+    __abstract__ = True
+
+    create_time = Column(db.DateTime, nullable=False, default=func.now())
+    update_time = Column(db.DateTime, nullable=False, default=func.now(), onupdate=func.now())
 
 
 def reference_col(
