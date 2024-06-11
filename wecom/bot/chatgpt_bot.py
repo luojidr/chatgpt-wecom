@@ -42,7 +42,7 @@ class ChatGPTBot(OpenAIImage):
             "timeout": None,  # 重试超时时间，在这个时间内，将会自动重试
         }
 
-    def create(self, query, context=None):
+    def reply(self, query, context=None):
         logger.warning("ChatGPTBot.create => self: %s context: %s", self, context)
         data = dict(is_ok=True, data={}, type=context.type)
 

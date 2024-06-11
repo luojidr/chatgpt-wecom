@@ -16,12 +16,11 @@ def healthcheck():
 @blueprint.route('/callback', methods=['POST'])
 def callback_wecom():
     data = request.json
-    print("callback cc => data:", data)
     logger.info("callback => data: %s", data)
+    query = data.get('spoken')
+    receiver = data.get('receivedName')
 
-    # send_text_message()
-
-
+    send_text_message(query, receiver=receiver)
     return jsonify(msg="ok", status=200, data=None)
 
 
