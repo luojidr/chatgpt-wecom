@@ -35,7 +35,7 @@ def send_text_message(query, receiver):
             {
                 "type": 203,
                 "titleList": settings.WT_GROUP_NAMES,
-                "receivedContent": "@%s %s" % (receiver, reply.content)
+                "receivedContent": "@%s\n%s" % (receiver, reply.content)
             }
         ]
     )
