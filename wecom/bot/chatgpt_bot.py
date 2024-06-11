@@ -54,13 +54,12 @@ class ChatGPTBot(Bot, OpenAIImage):
             "top_p": 1,
             "frequency_penalty": 0.0,  # [-2,2]之间，该值越大则更倾向于产生不同的内容
             "presence_penalty": 0.0,  # [-2,2]之间，该值越大则更倾向于产生不同的内容
-            "request_timeout": None,  # 请求超时时间，openai接口默认设置为600，对于难问题一般需要较长时间
+            # "request_timeout": None,  # 请求超时时间，openai接口默认设置为600，对于难问题一般需要较长时间 (新openai无此参数)
             "timeout": None,  # 重试超时时间，在这个时间内，将会自动重试
         }
 
-    def reply(self, query, context=None):
+    def reply(self, query, context=None) -> Reply:
         logger.warning("ChatGPTBot.create => self: %s context: %s", self, context)
-        data = dict(is_ok=True, data={}, type=context.type)
 
         # acquire reply content
         if context.type == ContextType.TEXT:
@@ -94,22 +93,18 @@ class ChatGPTBot(Bot, OpenAIImage):
             #     is_group=context.kwargs.get("isgroup", False),
             # )
 
-            data["data"] = result
+            return Reply(type=context.type, content=result["content"])
         elif context.type == ContextType.IMAGE_CREATE:
             is_ok, img_url, revised_prompt = self.create_img(query, 0)
-            data["is_ok"] = is_ok
-            data["data"] = dict(img_url=img_url, revised_prompt=revised_prompt)
 
             # # 将openai调用的结果记录在历史表中
             # ChatLog.update_chat_image_log(
             #     chat_log_id=context.get("chat_log_id", 0),
             #     img_url=retstring, revised_prompt=revised_prompt
             # )
-
+            return Reply(type=context.type, content=img_url)
         else:
             raise ValueError("Not support message type: %s", context.type)
-
-        return data
 
     def get_chat_completions(self, session: ChatGPTSession, api_key=None, args=None, retry_count=0) -> dict:
         """
@@ -127,14 +122,14 @@ class ChatGPTBot(Bot, OpenAIImage):
             if args is None:
                 args = self.args
 
-            response = self.client.chat.completions.create(messages=session.messages, **args)
+            response = self.client.chat.completions.create(messages=session.messages, **args).to_dict()
             logger.info("[CHATGPT] response={}".format(json.dumps(response, ensure_ascii=False, indent=4)))
 
             return {
                 "prompt_tokens": response["usage"]["prompt_tokens"],
                 "total_tokens": response["usage"]["total_tokens"],
                 "completion_tokens": response["usage"]["completion_tokens"],
-                "content": response.choices[0]["message"]["content"],
+                "content": response["choices"][0]["message"]["content"],
             }
         except Exception as e:
             need_retry = retry_count < 2

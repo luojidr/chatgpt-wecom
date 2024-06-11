@@ -6,13 +6,13 @@ from tenacity import retry, stop_after_attempt
 
 from config import settings
 from wecom.core.log import logger
-from wecom.bot.context import Context, ContextType
 from wecom.bot.chatgpt_bot import ChatGPTBot
+from wecom.bot.context import Context, ContextType, Reply
 
 bot = ChatGPTBot()
 
 
-def get_context(ctype, content, session_id, **kwargs):
+def get_context(ctype, content, session_id, **kwargs) -> Context:
     context = Context(ctype, content, kwargs=kwargs)
 
     context["session_id"] = session_id
@@ -24,12 +24,7 @@ def get_context(ctype, content, session_id, **kwargs):
 @retry(stop=stop_after_attempt(max_attempt_number=settings.MAX_RETRY_TIMES))
 def send_text_message(query, receiver):
     context = get_context(ctype=ContextType.TEXT, content=query, session_id=receiver)
-    reply = bot.reply(query=query, context=context)
-    is_ok, result = reply["is_ok"], reply["data"]
-
-    if not is_ok:
-        logger.warning("send_text_message => chatgpt failed: %s", result["content"])
-        return
+    reply: Reply = bot.reply(query=query, context=context)
 
     api_path = "/wework/sendRawMessage"
     data = dict(
@@ -38,7 +33,7 @@ def send_text_message(query, receiver):
             {
                 "type": 203,
                 "titleList": settings.WT_GROUP_NAMES,
-                "receivedContent": "@%s %s" % (receiver, result["content"])
+                "receivedContent": "@%s %s" % (receiver, reply.content)
             }
         ]
     )

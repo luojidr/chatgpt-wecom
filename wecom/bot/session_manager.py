@@ -68,7 +68,7 @@ class SessionManager(object):
         session.add_query(query)
 
         try:
-            total_tokens = session.discard_exceeding(self.max_tokens , None)
+            total_tokens = session.discard_exceeding(self.max_tokens, None)
             logger.debug("prompt tokens used={}".format(total_tokens))
         except Exception as e:
             logger.warning("Exception when counting tokens precisely for prompt: {}".format(str(e)))
