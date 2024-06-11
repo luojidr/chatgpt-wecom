@@ -11,6 +11,7 @@ from .openai_image import OpenAIImage
 from .session_manager import SessionManager
 from ..core.token_bucket import TokenBucket
 from ..core.log import logger
+from ..core.exceptions import RateLimitError
 from .context import ContextType
 
 from config import settings
@@ -106,12 +107,12 @@ class ChatGPTBot(OpenAIImage):
         """
         try:
             if not self.chatgpt_rate_limit:
-                raise openai.error.RateLimitError("rate limit exceeded")
+                raise RateLimitError("rate limit exceeded")
 
             if args is None:
                 args = self.args
 
-            response = openai.ChatCompletion.create(api_key=api_key, messages=session.messages, **args)
+            response = openai.chat.completions.create(model=self.model, messages=session.messages, **args)
             logger.info("[CHATGPT] response={}".format(json.dumps(response, ensure_ascii=False, indent=4)))
 
             return {
