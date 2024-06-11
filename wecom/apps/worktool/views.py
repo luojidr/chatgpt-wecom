@@ -20,7 +20,9 @@ def callback_wecom():
     query = data.get('spoken')
     receiver = data.get('receivedName')
 
-    send_text_message(query, receiver=receiver)
+    if query and receiver:
+        send_text_message(query, receiver=receiver)
+
     return jsonify(msg="ok", status=200, data=None)
 
 
