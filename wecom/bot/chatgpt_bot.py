@@ -127,7 +127,7 @@ class ChatGPTBot(Bot, OpenAIImage):
             if args is None:
                 args = self.args
 
-            response = self.client.chat.completions.create(model=self.model, messages=session.messages, **args)
+            response = self.client.chat.completions.create(messages=session.messages, **args)
             logger.info("[CHATGPT] response={}".format(json.dumps(response, ensure_ascii=False, indent=4)))
 
             return {
