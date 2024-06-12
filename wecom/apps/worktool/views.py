@@ -3,9 +3,9 @@ from flask import send_from_directory
 from flask import Blueprint, request, jsonify
 
 from config import settings
-from ...core.send import MessageReply
-from ...core.log import logger
 from ...bot.context import WTTextType
+from ...core.log import logger
+from ...core.send import MessageReply
 
 blueprint = Blueprint("wecom", __name__, url_prefix="/wecom", static_folder="../static")
 

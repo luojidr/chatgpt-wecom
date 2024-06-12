@@ -1,6 +1,7 @@
 import json
 import traceback
 from enum import Enum
+from typing import List, Dict, Any
 
 import requests
 from fake_useragent import UserAgent
@@ -8,6 +9,7 @@ from tenacity import retry, stop_after_attempt
 
 from config import settings
 from wecom.core.log import logger
+from wecom.core.utils import split_long_text_by_sentences
 from wecom.bot.chatgpt_bot import ChatGPTBot
 from wecom.bot.context import Context, ContextType, Reply
 
@@ -78,18 +80,17 @@ class MessageReply:
 
     def send_text(self, query, receiver):
         reply: Reply = self.get_reply(query, receiver)
+        segments: List[str] = split_long_text_by_sentences(reply.content)
+        text_list: List[Dict[str, Any]] = []
 
-        payload = dict(
-            socketType=2,
-            list=[
-                {
-                    "type": SendType.TEXT.value,
-                    "titleList": settings.WT_GROUP_NAMES,
-                    "receivedContent": "@%s\n%s" % (receiver, reply.content)
-                }
-            ]
-        )
+        for seg_text in segments:
+            text_list.append(dict(
+                type=SendType.TEXT.value,
+                titleList=settings.WT_GROUP_NAMES,
+                receivedContent="@%s\n%s" % (receiver, seg_text)
+            ))
 
+        payload = dict(socketType=2, list=text_list)
         return self.request(self.api_base + self.SEND_RAW_MSG_API, payload=payload)
 
     def send_file(self):

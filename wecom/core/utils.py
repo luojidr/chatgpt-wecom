@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 """Helper utilities and decorators."""
 
-import string
+import re
 import secrets
+from typing import List
 
 from flask import flash
 
@@ -33,3 +34,36 @@ def get_random_string(length, allowed_chars=RANDOM_STRING_CHARS):
       * length: 22, bit length =~ 131 bits
     """
     return "".join(secrets.choice(allowed_chars) for i in range(length))
+
+
+def split_long_text_by_sentences(long_text: str, max_length: int = 600) -> List[str]:
+    if len(long_text) < max_length:
+        return [long_text]
+
+    sentence_endings = ['\n']
+    sentence_list = re.compile(r"[%s]" % "".join(sentence_endings)).split(long_text)
+    print(sentence_list)
+
+    segment = []
+    fragments = []
+
+    for sentence in sentence_list:
+        if len("".join(segment)) <= max_length:
+            segment.append(sentence)
+            continue
+
+        prompt_divider = segment[-1]
+        if re.compile(r"={25,50}").search(prompt_divider):
+            fragments.append("\n".join(segment[:-1]))
+            segment.clear()
+            segment.append(prompt_divider)
+        else:
+            fragments.append("\n".join(segment[:]))
+            segment.clear()
+
+        segment.append(sentence)
+
+    if segment:
+        fragments.append("\n".join(segment[:]))
+
+    return fragments
