@@ -54,5 +54,5 @@ OPENAI_SYSTEM_PROMPT = "你是基于大语言模型的AI智能助手，旨在回
 # WorkTool Config
 WT_API_BASE = "https://api.worktool.ymdyes.cn"
 WT_ROBOTID = "d9c094fc56b649fc8688c65f565ae72e"
-WT_GROUP_NAMES = ["智创Demo"]
+WT_GROUP_NAMES = ["群机器人测试"]
 MAX_RETRY_TIMES = 3
