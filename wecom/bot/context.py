@@ -6,6 +6,19 @@ class ContextType(enum.Enum):
     IMAGE_CREATE = 2    # 创建图片
 
 
+class WTTextType(enum.Enum):
+    UNKNOWN = 0             # 未知
+    TEXT = 1                # 文本
+    IMAGE = 2               # 图片
+    VOICE = 3               # 语音
+    VIDEO = 5               # 视频
+    MINI_PROGRAM = 7        # 小程序
+    LINK = 8                # 链接
+    FILE = 9                # 文件
+    MERGE_RECORD = 13       # 合并记录
+    TEXT_WITH_REPLY = 15    # 带回复文本
+
+
 class Context:
     def __init__(self, type: ContextType = None, content=None, kwargs=None):
         self.type = type
