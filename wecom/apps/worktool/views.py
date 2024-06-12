@@ -26,9 +26,9 @@ def check_robot_status():
 
 @blueprint.route("/static/<string:filename>")
 def download(filename):
-    static_path = os.path.join(settings.PROJECT_PATH, "static")
+    static_path = os.path.join(settings.PROJECT_PATH, "staticfiles")
     file_path = os.path.join(static_path, filename)
-    logger.info("static => static_path: %s, filename: %s", static_path, filename)
+    logger.info("download => static_path: %s, filename: %s", static_path, filename)
 
     if not os.path.exists(static_path) or not os.path.exists(file_path):
         return jsonify(msg="目录或文件不存在！", status=5002, data=None)

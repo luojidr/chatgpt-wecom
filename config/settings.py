@@ -58,4 +58,4 @@ WT_API_BASE = "https://api.worktool.ymdyes.cn"
 WT_ROBOTID = "d9c094fc56b649fc8688c65f565ae72e"
 WT_GROUP_NAMES = ["群机器人测试2"]
 MAX_RETRY_TIMES = 3
-WT_REBOT_NAME = "@小智"
+WT_REBOT_NAME = "@丁绪涛"
