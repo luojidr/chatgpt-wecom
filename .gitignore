@@ -8,5 +8,5 @@ logs/
 .AppleDouble
 .LSOverride
 tests/
-
+static/
 app.log

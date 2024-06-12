@@ -6,6 +6,7 @@ Most configuration is set via environment variables.
 For local development, use a .env file to set
 environment variables.
 """
+import os.path
 from environs import Env
 
 env = Env()
@@ -33,6 +34,7 @@ SQLALCHEMY_TRACK_MODIFICATIONS = True
 
 TIME_ZONE = None
 
+PROJECT_PATH = os.path.dirname(os.path.dirname(__file__))
 
 # OpenAI Config
 OPENAI_API_BASE = "http://oneapi.crotondata.cn/v1"

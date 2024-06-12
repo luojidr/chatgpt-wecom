@@ -20,10 +20,11 @@ class SendType(Enum):
     UNGROUP = 219
 
 
-class MessageSender:
+class MessageReply:
     bot = ChatGPTBot()
 
     SEND_RAW_MSG_API = "/wework/sendRawMessage"
+    REBOT_ONLINE_API = "/robot/robotInfo/online"
 
     def __init__(self):
         self.api_base = settings.WT_API_BASE
@@ -48,26 +49,34 @@ class MessageSender:
             "Content-Type": "application/json"
         }
 
+    def get_rebot_status(self):
+        """ 检查机器人是否在线 """
+        result = self.request(self.api_base + self.REBOT_ONLINE_API, method='GET')
+        return result["code"] == 200 and result.get("data")
+
     @retry(stop=stop_after_attempt(max_attempt_number=settings.MAX_RETRY_TIMES))
-    def post(self, api, payload, params=None):
-        logger.info("MessageSender.post => api: %s, payload: %s, params: %s", api, payload, params)
+    def request(self, api, payload=None, params=None, method="POST"):
+        assert method in ["POST", "GET"], "request is invalid!"
+        logger.info("MessageReply.%s => api: %s, payload: %s, params: %s", method.lower(), api, payload, params)
 
         try:
             params = params or {}
             params.update(dict(robotId=settings.WT_ROBOTID))
+            kwargs = dict(params=params, headers=self.get_headers())
 
-            r = requests.post(
-                api,
-                params=params,
-                data=json.dumps(payload),
-                headers=self.get_headers()
-            )
-            logger.info("MessageSender.post => result: %s", r.json())
+            if method == "POST":
+                kwargs["data"] = json.dumps(payload)
+
+            method = method.lower()
+            r = requests.request(method, api, **kwargs)
+            logger.info("MessageReply.%s => result: %s", method, r.json())
+
+            return r.json()
         except Exception as e:
-            logger.error("MessageSender.post error: %s", e)
+            logger.error("MessageReply.%s error: %s", method, e)
             logger.error(traceback.format_exc())
 
-    def send_text_message(self, query, receiver):
+    def send_text(self, query, receiver):
         reply: Reply = self.get_reply(query, receiver)
 
         payload = dict(
@@ -81,4 +90,9 @@ class MessageSender:
             ]
         )
 
-        return self.post(self.api_base + self.SEND_RAW_MSG_API, payload=payload)
+        return self.request(self.api_base + self.SEND_RAW_MSG_API, payload=payload)
+
+    def send_file(self):
+        pass
+
+
