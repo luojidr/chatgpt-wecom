@@ -1,15 +1,12 @@
 # -*- coding: utf-8 -*-
 """The app module, containing the app factory function."""
-import sys
-import logging
-from logging.handlers import RotatingFileHandler
 from importlib import import_module
 
 from flask import Flask, render_template
 
 from .apps import user, worktool
 from .core import commands
-from .core.log import get_logger
+from wecom.utils.log import get_logger
 from .core.extensions import (
     bcrypt,
     cache,
@@ -17,7 +14,6 @@ from .core.extensions import (
     db,
     debug_toolbar,
     flask_static_digest,
-    login_manager,
     migrate,
 )
 

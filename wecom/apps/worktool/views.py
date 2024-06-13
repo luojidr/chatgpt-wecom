@@ -5,9 +5,10 @@ from flask import send_from_directory
 from flask import Blueprint, request, jsonify
 
 from config import settings
-from ...bot.context import WTTextType
-from ...core.log import logger
-from ...core.send import MessageReply
+from wecom.bot.context import WTTextType
+from wecom.utils.log import logger
+from wecom.utils.reply import MessageReply
+from wecom.utils.template import TopAuthorNewWorkTemplate, TopAuthorNewWorkContent
 
 blueprint = Blueprint("wecom", __name__, url_prefix="/wecom", static_folder="../static")
 
@@ -36,6 +37,23 @@ def download(filename):
         return jsonify(msg="目录或文件不存在！", status=5002, data=None)
 
     return send_from_directory(static_path, filename, as_attachment=True)
+
+
+@blueprint.route("/push")
+def push():
+    templates = [
+        TopAuthorNewWorkTemplate(
+            author="乔治·米勒", works_name="《疯狂的麦克斯：狂暴女神》",
+            core_highlight="弗瑞奥萨", theme="科幻/动作/惊悚/冒险",
+            pit_date="2023-04-02", ai_sore="6.5",
+            detail_url="https://movie.douban.com/subject/34996127/",
+            src_url="https://movie.douban.com/subject/34996127/"
+        )
+    ]
+    content = TopAuthorNewWorkContent(templates).get_content()
+    MessageReply(group_remark="IP智能推荐机器人").simple_push(receiver="Meta", content=content)
+
+    return jsonify(msg="ok", status=200, data=None)
 
 
 @blueprint.route('/callback', methods=['POST'])

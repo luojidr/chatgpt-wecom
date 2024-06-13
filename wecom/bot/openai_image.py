@@ -1,9 +1,8 @@
-import json
 import time
 
 import openai
 
-from wecom.core.log import logger
+from wecom.utils.log import logger
 from wecom.core.token_bucket import TokenBucket
 from config import settings
 

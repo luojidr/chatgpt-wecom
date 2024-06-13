@@ -8,8 +8,8 @@ from fake_useragent import UserAgent
 from tenacity import retry, stop_after_attempt
 
 from config import settings
-from wecom.core.log import logger
-from wecom.core.utils import split_long_text_by_sentences
+from wecom.utils.log import logger
+from wecom.utils.utils import split_long_text_by_sentences
 from wecom.bot.chatgpt_bot import ChatGPTBot
 from wecom.bot.context import Context, ContextType, Reply
 
@@ -99,5 +99,19 @@ class MessageReply:
 
     def send_file(self):
         pass
+
+    def simple_push(self, receiver, content):
+        segments: List[str] = split_long_text_by_sentences(content)
+        text_list: List[Dict[str, Any]] = [
+            dict(
+                type=SendType.TEXT.value,
+                titleList=[self.group_remark],
+                receivedContent="@%s\n%s" % (receiver, seg)
+            )
+            for seg in segments
+        ]
+
+        payload = dict(socketType=2, list=text_list)
+        return self.request(self.api_base + self.SEND_RAW_MSG_API, payload=payload)
 
 

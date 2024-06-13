@@ -1,4 +1,4 @@
-from ..core.log import logger
+from wecom.utils.log import logger
 from ..core.expired_dict import ExpiredDict
 from config import settings
 

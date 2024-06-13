@@ -1,7 +1,6 @@
 # encoding:utf-8
 
 import time
-import json
 
 import requests
 import openai
@@ -9,9 +8,9 @@ from openai import OpenAI
 
 from .chatgpt_session import ChatGPTSession
 from .openai_image import OpenAIImage
-from .session_manager import SessionManager, GroupSessionManager
+from .session_manager import GroupSessionManager
 from ..core.token_bucket import TokenBucket
-from ..core.log import logger
+from wecom.utils.log import logger
 from ..core.exceptions import RateLimitError
 from .context import ContextType, Context, Reply, ReplyType
 

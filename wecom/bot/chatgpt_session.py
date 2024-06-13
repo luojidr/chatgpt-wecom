@@ -1,6 +1,6 @@
 from .session_manager import Session
-from ..core import const
-from ..core.log import logger
+from ..utils import const
+from wecom.utils.log import logger
 
 """
     e.g.  [
