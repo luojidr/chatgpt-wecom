@@ -3,13 +3,13 @@ from ..core.expired_dict import ExpiredDict
 from config import settings
 
 
-class Session(object):
+class Session:
     def __init__(self, session_id, system_prompt=None):
         self.session_id = session_id
         self.messages = []
 
         if system_prompt is None:
-            self.system_prompt = settings.OPENAI_SYSTEM_PROMPT
+            self.system_prompt = settings.DEFAULT_OPENAI_SYSTEM_PROMPT
         else:
             self.system_prompt = system_prompt
 
@@ -30,22 +30,22 @@ class Session(object):
         assistant_item = {"role": "assistant", "content": reply}
         self.messages.append(assistant_item)
 
-    def discard_exceeding(self, max_tokens=None, cur_tokens=None):
+    def discard_exceeding(self, max_tokens, cur_tokens=None):
         raise NotImplementedError
 
     def calc_tokens(self):
         raise NotImplementedError
 
 
-class SessionManager(object):
-    def __init__(self, sessioncls, **session_args):
+class SessionManager:
+    def __init__(self, session_cls, **session_kwargs):
         if settings.SESSION_EXPIRES_IN_SECONDS:
             sessions = ExpiredDict(settings.SESSION_EXPIRES_IN_SECONDS)
         else:
             sessions = dict()
         self.sessions = sessions
-        self.sessioncls = sessioncls
-        self.session_args = session_args
+        self.session_cls = session_cls
+        self.session_kwargs = session_kwargs
         self.max_tokens = settings.CONVERSATION_MAX_TOKENS or 10000
 
     def build_session(self, session_id, system_prompt=None):
@@ -54,10 +54,13 @@ class SessionManager(object):
         如果system_prompt不会空，会更新session的system_prompt并重置session
         """
         if session_id is None:
-            return self.sessioncls(session_id, system_prompt, **self.session_args)
+            return self.session_cls(session_id, system_prompt, **self.session_kwargs)
 
         if session_id not in self.sessions:
-            self.sessions[session_id] = self.sessioncls(session_id, system_prompt, **self.session_args)
+            if system_prompt:
+                self.session_kwargs.setdefault("system_prompt", system_prompt)
+
+            self.sessions[session_id] = self.session_cls(session_id, **self.session_kwargs)
         elif system_prompt is not None:  # 如果有新的system_prompt，更新并重置session
             self.sessions[session_id].set_system_prompt(system_prompt)
         session = self.sessions[session_id]
@@ -79,7 +82,7 @@ class SessionManager(object):
         session.add_reply(reply)
 
         try:
-            tokens_cnt = session.discard_exceeding(self.max_tokens , total_tokens)
+            tokens_cnt = session.discard_exceeding(self.max_tokens, total_tokens)
             logger.debug("raw total_tokens={}, savesession tokens={}".format(total_tokens, tokens_cnt))
         except Exception as e:
             logger.warning("Exception when counting tokens precisely for session: {}".format(str(e)))
@@ -91,3 +94,37 @@ class SessionManager(object):
 
     def clear_all_session(self):
         self.sessions.clear()
+
+
+class GroupSessionManager:
+    def __init__(self, session_cls, **session_kwargs):
+        self.g_sessions = {}
+
+        # 所有的聊天组使用相同的Session
+        self.session_cls = session_cls
+        self.session_kwargs = session_kwargs
+
+    def _get_session(self, group_name, system_prompt=None):
+        if system_prompt is None:
+            system_prompt = settings.WT_GROUP_NAMES[group_name]
+
+        if group_name not in self.g_sessions:
+            self.g_sessions[group_name] = SessionManager(
+                self.session_cls,
+                system_prompt=system_prompt,
+                **self.session_kwargs
+            )
+
+        return self.g_sessions[group_name]
+
+    def add_query(self, group_name, query, session_id):
+        g_session = self._get_session(group_name)
+        return g_session.session_query(query, session_id)
+
+    def add_reply(self, group_name, reply, session_id, total_tokens=None):
+        g_session = self._get_session(group_name)
+        return g_session.session_reply(reply, session_id, total_tokens)
+
+
+
+

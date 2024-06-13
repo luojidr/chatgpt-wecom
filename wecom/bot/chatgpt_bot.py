@@ -9,11 +9,11 @@ from openai import OpenAI
 
 from .chatgpt_session import ChatGPTSession
 from .openai_image import OpenAIImage
-from .session_manager import SessionManager
+from .session_manager import SessionManager, GroupSessionManager
 from ..core.token_bucket import TokenBucket
 from ..core.log import logger
 from ..core.exceptions import RateLimitError
-from .context import ContextType, Context, Reply
+from .context import ContextType, Context, Reply, ReplyType
 
 from config import settings
 
@@ -23,7 +23,9 @@ class Bot:
         self.api_key = settings.OPENAI_API_KEY
         self.api_base = settings.OPENAI_API_BASE
 
-    def reply(self, query, context: Context = None) -> Reply:
+        self._pprint_query_size = 200
+
+    def reply(self, query, context: Context) -> Reply:
         """
         bot auto-reply content
         :param query: received message
@@ -44,7 +46,8 @@ class ChatGPTBot(Bot, OpenAIImage):
         self.chatgpt_rate_limit = TokenBucket(settings.CHATGPT_RATE_LIMIT or 20)
 
         self.model = settings.OPENAI_MODEL or "gpt-3.5-turbo"
-        self.sessions = SessionManager(ChatGPTSession, model=self.model)
+        # self.sessions = SessionManager(ChatGPTSession, model=self.model)
+        self.sessions = GroupSessionManager(ChatGPTSession, model=self.model)
 
         self.client = OpenAI(api_key=self.api_key, base_url=self.api_base)
         self.args = {
@@ -58,15 +61,17 @@ class ChatGPTBot(Bot, OpenAIImage):
             "timeout": None,  # 重试超时时间，在这个时间内，将会自动重试
         }
 
-    def reply(self, query, context=None) -> Reply:
+    def reply(self, query, context: Context) -> Reply:
+        group_name = context["group_remark"]
         logger.warning("ChatGPTBot.create => self: %s context: %s", self, context)
 
         # acquire reply content
         if context.type == ContextType.TEXT:
-            logger.info("[CHATGPT] query={}".format(query if len(query) < 300 else query[:300]))
+            logger.info("[CHATGPT] query={}".format(query[:self._pprint_query_size]))
 
             session_id = context["session_id"]
-            session = self.sessions.session_query(query, session_id)
+            # session = self.sessions.session_query(query, session_id)
+            session = self.sessions.add_query(group_name, query, session_id)
             logger.debug("[CHATGPT] session query={}".format(session.messages))
 
             api_key = context.get("openai_api_key")
@@ -77,12 +82,12 @@ class ChatGPTBot(Bot, OpenAIImage):
                 new_args["model"] = model
 
             result = self.get_chat_completions(session, api_key, args=new_args)
-            logger.debug(
-                "[CHATGPT] new_query={}, session_id={}, content={}, total_tokens={}, completion_tokens={}".format(
-                    session.messages, session_id,
-                    result["content"], result["total_tokens"], result["completion_tokens"],
-                )
-            )
+            # logger.debug(
+            #     "[CHATGPT] new_query={}, session_id={}, content={}, total_tokens={}, completion_tokens={}".format(
+            #         session.messages, session_id,
+            #         result["content"], result["total_tokens"], result["completion_tokens"],
+            #     )
+            # )
 
             # # 调用 openai 大模型后保存到历史记录中
             # ChatLog.update_chat_response_log(
@@ -93,7 +98,16 @@ class ChatGPTBot(Bot, OpenAIImage):
             #     is_group=context.kwargs.get("isgroup", False),
             # )
 
-            return Reply(type=context.type, content=result["content"])
+            if result["completion_tokens"] == 0 and len(result["content"]) > 0:
+                reply = Reply(ReplyType.ERROR, content=result["content"])
+            elif result["completion_tokens"] > 0:
+                self.sessions.add_reply(group_name, result["content"], session_id, result["total_tokens"])
+                reply = Reply(ReplyType.TEXT, content=result["content"])
+            else:
+                reply = Reply(ReplyType.ERROR, content=result["content"])
+                logger.debug("[CHATGPT] reply {} used 0 tokens.".format(result))
+
+            return reply
         elif context.type == ContextType.IMAGE_CREATE:
             is_ok, img_url, revised_prompt = self.create_img(query, 0)
 
@@ -116,7 +130,7 @@ class ChatGPTBot(Bot, OpenAIImage):
         :return: {}
         """
         try:
-            if not self.chatgpt_rate_limit:
+            if not self.chatgpt_rate_limit.get_token():
                 raise RateLimitError("rate limit exceeded")
 
             if args is None:

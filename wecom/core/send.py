@@ -1,7 +1,7 @@
 import json
 import traceback
 from enum import Enum
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 import requests
 from fake_useragent import UserAgent
@@ -28,8 +28,9 @@ class MessageReply:
     SEND_RAW_MSG_API = "/wework/sendRawMessage"
     REBOT_ONLINE_API = "/robot/robotInfo/online"
 
-    def __init__(self):
+    def __init__(self, group_remark: Optional[str] = None):
         self.api_base = settings.WT_API_BASE
+        self.group_remark = group_remark  # 群名
 
     def get_context(self, ctype, content, session_id, **kwargs) -> Context:
         context = Context(ctype, content, kwargs=kwargs)
@@ -40,16 +41,15 @@ class MessageReply:
         return context
 
     def get_reply(self, query: str, session_id: str):
-        context = self.get_context(ctype=ContextType.TEXT, content=query, session_id=session_id)
+        context: Context = self.get_context(
+            ctype=ContextType.TEXT,
+            content=query,
+            session_id=session_id,
+            group_remark=self.group_remark
+        )
         reply: Reply = self.bot.reply(query=query, context=context)
 
         return reply
-
-    def get_headers(self):
-        return {
-            "User-Agent": UserAgent().random,
-            "Content-Type": "application/json"
-        }
 
     def get_rebot_status(self):
         """ 检查机器人是否在线 """
@@ -61,10 +61,14 @@ class MessageReply:
         assert method in ["POST", "GET"], "request is invalid!"
         logger.info("MessageReply.%s => api: %s, payload: %s, params: %s", method.lower(), api, payload, params)
 
+        headers = {
+            "User-Agent": UserAgent().random,
+            "Content-Type": "application/json"
+        }
+
         try:
             params = params or {}
-            params.update(dict(robotId=settings.WT_ROBOTID))
-            kwargs = dict(params=params, headers=self.get_headers())
+            kwargs = dict(params=dict(robotId=settings.WT_ROBOT_ID, **params), headers=headers)
 
             if method == "POST":
                 kwargs["data"] = json.dumps(payload)
@@ -86,7 +90,7 @@ class MessageReply:
         for seg_text in segments:
             text_list.append(dict(
                 type=SendType.TEXT.value,
-                titleList=settings.WT_GROUP_NAMES,
+                titleList=[self.group_remark],
                 receivedContent="@%s\n%s" % (receiver, seg_text)
             ))
 

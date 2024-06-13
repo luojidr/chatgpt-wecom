@@ -1,4 +1,6 @@
+import re
 import os.path
+
 from flask import send_from_directory
 from flask import Blueprint, request, jsonify
 
@@ -45,15 +47,24 @@ def callback_wecom():
     if text_type != WTTextType.TEXT.value:
         return jsonify(msg="textType: %s not support!", status=200, data=None)
 
-    if not data.get("rawSpoken", "").startswith(settings.WT_REBOT_NAME):
+    group_name = data.get("groupName", "")
+    group_remark = data.get("groupRemark", "")
+    logger.info("group_name: %s, group_remark: %s", group_name, group_remark)
+
+    match = re.compile(r"群主:(.*?)$").search(group_name)
+    if match is not None:
+        group_master = match.group(1).strip()
+    else:
+        return jsonify(msg="未获取到群主！", status=200, data=None)
+
+    if not data.get("rawSpoken", "").startswith("@" + group_master):
         return jsonify(msg="群聊消息！", status=200, data=None)
 
     query = data.get('spoken', "")
     receiver = data.get('receivedName')
 
     if query and receiver:
-        MessageReply().send_text(query, receiver=receiver)
+        MessageReply(group_remark=group_remark).send_text(query, receiver=receiver)
 
     return jsonify(msg="ok", status=200, data=None)
-
 
