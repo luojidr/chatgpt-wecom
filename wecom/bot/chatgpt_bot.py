@@ -82,12 +82,11 @@ class ChatGPTBot(Bot, OpenAIImage):
                 new_args["model"] = model
 
             result = self.get_chat_completions(session, api_key, args=new_args)
-            # logger.debug(
-            #     "[CHATGPT] new_query={}, session_id={}, content={}, total_tokens={}, completion_tokens={}".format(
-            #         session.messages, session_id,
-            #         result["content"], result["total_tokens"], result["completion_tokens"],
-            #     )
-            # )
+            logger.debug(
+                "[CHATGPT] chat response => session_id={}, total_tokens={}, completion_tokens={}, content={}".format(
+                    session_id, result["total_tokens"], result["completion_tokens"], result["content"]
+                )
+            )
 
             # # 调用 openai 大模型后保存到历史记录中
             # ChatLog.update_chat_response_log(
@@ -137,7 +136,7 @@ class ChatGPTBot(Bot, OpenAIImage):
                 args = self.args
 
             response = self.client.chat.completions.create(messages=session.messages, **args).to_dict()
-            logger.info("[CHATGPT] response={}".format(json.dumps(response, ensure_ascii=False, indent=4)))
+            # logger.info("[CHATGPT] response={}".format(json.dumps(response, ensure_ascii=False, indent=4)))
 
             return {
                 "prompt_tokens": response["usage"]["prompt_tokens"],
