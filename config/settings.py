@@ -14,7 +14,7 @@ from environs import Env
 from dotenv import load_dotenv
 
 PROJECT_PATH = os.path.dirname(os.path.dirname(__file__))
-os.environ["APP_ENV"] = "DEV"       # Set app environ [DEV, PROD]
+os.environ["APP_ENV"] = os.environ.get("APP_ENV", "DEV")      # Set app environ [DEV, PROD]
 
 dotenv_path = os.path.join(PROJECT_PATH, "config", ".env", os.environ["APP_ENV"].lower())
 logging.warning("Project current settings path: %s", dotenv_path)
