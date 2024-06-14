@@ -44,11 +44,12 @@ def download(filename):
 def push():
     templates = [
         TopAuthorNewWorkTemplate(
-            author="乔治·米勒, 乔治·米勒,乔治·米勒", works_name="《疯狂的麦克斯：,狂暴女神,狂暴女神,狂暴女神》",
-            core_highlight="弗瑞奥萨", theme="科幻/动作/惊悚/冒险",
-            pit_date="2023-04-02", ai_sore="6.5",
-            detail_url="https://movie.douban.com/subject/34996127/",
-            src_url="https://movie.douban.com/subject/34996127/"
+            author="绿药", works_name="《婀娜扶阙》",
+            core_highlight="撩了就跑却撩个神经病",
+            theme="科原创-言情-架空历史-爱情",
+            pit_date="2023-06-25", ai_sore="7.5",
+            detail_url="http://8.217.15.229:9999/wecom/evaluation?rid=6695210969274f4b94d0a295f51bd5db",
+            src_url="https://www.jjwxc.net/onebook.php?novelid=6436403"
         )
     ]
     content = TopAuthorNewWorkContent(templates).get_layout_content()
@@ -92,7 +93,7 @@ def callback_wecom():
     return jsonify(msg="ok", status=200, data=None)
 
 
-@blueprint.route('/evaluation/detail', methods=['GET'])
+@blueprint.route('/evaluation', methods=['GET'])
 def ai_evaluation_detail():
     params = request.args
     rid = params.get("rid")
