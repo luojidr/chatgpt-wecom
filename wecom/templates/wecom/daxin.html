@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小说评估与分析</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #eceff1;
+            color: #333;
+        }
+        .container {
+            width: 90%;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+        }
+        h2 {
+            font-size: 20px;
+            margin-bottom: 10px;
+            color: #2196f3;
+            border-bottom: 3px solid #ccc;
+            padding-bottom: 10px;
+        }
+        .section-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .input-section, .output-section {
+            padding: 10px;
+            background-color: #fdfdfd;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.05);
+        }
+        .input-section {
+            flex: 1;
+        }
+        .output-section {
+            flex: 1;
+            font-size: 18px;
+        }
+        .input-section form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .input-section form div {
+            display: flex;
+            flex-direction: column;
+        }
+        .input-section form div label {
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: 14px;
+            color: #666;
+        }
+        .input-section form div input, .input-section form div select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+        .submit-btn {
+            width: 100%;
+            text-align: center;
+            margin-top: 20px;
+        }
+        .submit-btn button {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 4px;
+            background-color: #4caf50;
+            color: #fff;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .submit-btn button:hover {
+            background-color: #45a049;
+        }
+
+        .intro-text {
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        .list-container ul {
+            list-style-type: disc; /* 设置实心圆圈 */
+            padding-left: 30px;
+        }
+        .list-container ul li {
+            display: list-item; /* 确保li显示为列表项 */
+            margin-bottom: 10px;
+            line-height: 1.3;
+            font-size: 15px;
+            color: #333;
+        }
+        .suggestion ul {
+            list-style-type: circle; /* 设置空心圆圈 */
+            padding-left: 25px;
+        }
+        .suggestion ul li {
+            display: list-item; /* 确保li显示为列表项 */
+            margin-bottom: 10px;
+            line-height: 1.2;
+            font-size: 15px;
+            color: #333;
+        }
+
+        @media (min-width: 768px) {
+            .section-container {
+                flex-direction: row;
+            }
+            .input-section {
+                flex: 0.3;
+            }
+            .output-section {
+                flex: 0.7;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+{#        <h2>简介</h2>#}
+{#        <p class="intro-text">#}
+{#            输入需要评估的小说名字、题材类型及作者，从市场潜力、创新属性、内容亮点三大维度对该小说进行评估与分析，同时对联网检索到的信息进行梳理。若需要更开放的信息与评估结论，可以不用输入题材类型与作者，输入小说名时，不需要加书名号。若需要更加准确的结果，可以增加检索条数，加大数据参考范围。但检索条数最多不得多于40条。待评估完成后，可以通过"点击追问“，对评估结果进行进一步的沟通与交流。#}
+{#        </p>#}
+
+        <div class="section-container">
+            <div class="input-section">
+                <h2>输入</h2>
+                <form>
+                    <div>
+                        <label for="novel-name">小说名</label>
+                        <input type="text" id="novel-name" name="novel-name" placeholder="输入小说名称" value="灯花笑">
+                    </div>
+                    <div>
+                        <label for="genre">题材类型</label>
+                        <input type="text" id="genre" name="genre" placeholder="选择题材类型" value="古代言情">
+                    </div>
+                    <div>
+                        <label for="author">作者</label>
+                        <input type="text" id="author" name="author" placeholder="输入作者名称" value="千山茶客">
+                    </div>
+                    <div>
+                        <label for="market-hotness">检索条数</label>
+                        <input type="text" id="market-hotness" name="market-hotness" placeholder="输入检索条数" value="20">
+                    </div>
+                    <div class="submit-btn">
+                    </div>
+                </form>
+            </div>
+
+            <div class="output-section">
+                <h2>输出</h2>
+                <p><strong>小说初审评估与分析（联网版）</strong></p>
+                <div class="list-container">
+                    <strong>【基本信息】：</strong>
+                    <ul>
+                        <li>故事梗概：《灯花煞》讲述了陆瞳学医归乡后，发现家破人亡的悲剧。她决心为家人复仇，展开了一系列的斗争和医治行动，与裴云曦的爱恨纠葛也贯穿其中。</li>
+                        <li>故事主题：复仇与救赎，爱恨交织的古代言情。</li>
+                        <li>人物关系：主要围绕陆瞳与裴云曦的关系展开，同时也涉及陆瞳家族成员和其他角色。</li>
+                        <li>市场表现：该小说在起点中文网等平台上有着较高的阅读量和讨论度，作者千山茶客有一定的粉丝基础。</li>
+                        <li>作者信息：千山茶客，网络文学作家，有多部作品，其中包括《重生之将门毒后》等受欢迎的小说。</li>
+                    </ul>
+                </div>
+
+                <div class="list-container">
+                    <strong>【市场潜力】：</strong>
+                    <ul>
+                        <li>受众适合度：古代言情类故事的目标受众主要是女性读者，该小说以复仇和爱情为主题，符合目标受众的喜好。评分：8.0</li>
+                        <li>讨论热度：小说的复仇和医治主题贴合当前社会对正义和医学话题的关注，能引起一定讨论。评分：7.8</li>
+                        <li>稀缺性：古代言情小说市场竞争激烈，但该小说以医学为特色，具有一定的稀缺性。评分：7.9</li>
+                        <li>播放数据：考虑到作者的粉丝基础和小说的讨论度，该小说有潜力在市场上获得良好的播放数据。评分：8.1</li>
+                    </ul>
+                </div>
+
+                <div class="list-container">
+                    <strong>【创新属性】：</strong>
+                    <ul>
+                        <li>核心选点：小说以女主角的医术和复仇为核心，这一选点在古代言情类小说中较为新颖。评分：8.2</li>
+                        <li>故事概念：故事将医术与复仇相结合，为古代言情小说增添了新的元素。评分：8.3</li>
+                        <li>故事设计：小说在人物塑造、情节发展等方面有独到之处，故事设计具有创新性。评分：8.4</li>
+                    </ul>
+                </div>
+
+                 <div class="list-container">
+                    <strong>【内容亮点】：</strong>
+                    <ul>
+                        <li>主题立意：小说主题明确，复仇与救赎的主题深入人心，具有现实意义。评分：8.5</li>
+                        <li>故事情境：小说情境生动，医术与宫廷斗争的结合增加了戏剧性。评分：8.6</li>
+                        <li>人物设定：陆瞳作为女医生的设定新颖，裴云暎的角色复杂多变，人物设定鲜明。评分：8.7</li>
+                        <li>人物关系：小说中的人物关系错综复杂，充满张力，尤其是陆瞳和裴云暎之间的爱恨纠葛。评分：8.8</li>
+                        <li>情节桥段：小说情节跌宕起伏，桥段设计巧妙，叙事节奏恰到好处。评分：8.9</li>
+                    </ul>
+                </div>
+
+                <div class="list-container">
+                    <strong>【总体评价】：</strong>
+                    <ul>
+                        <li>综合考虑市场潜力、创新属性、内容亮点，该小说在古代言情类作品中表现出色，具有较高的开发潜力。总评分：8.6</li>
+                    </ul>
+                </div>
+
+                <div class="list-container">
+                    <strong>【推进建议】：</strong>
+                    <ul>
+                        <li>考虑到《灯花笑》的市场潜力、创新属性和内容亮点，总体评分达到了8.6分，建议可以进一步开发成影视剧。具体建议如下：</li>
+                        <div class="suggestion">
+                            <ul>
+                                <li>强化女主角的医术背景和复仇动机，突出其与传统古代言情小说的区别。</li>
+                                <li>深化主要人物的情感纠葛，尤其是陆瞳和裴云暎的关系，以增强戏剧张力。</li>
+                                <li>利用小说中的医术元素，结合古代背景，创造独特的视觉效果。</li>
+                                <li>保持小说的叙事节奏和情节桥段的精彩，以吸引观众持续追看。</li>
+                            </ul>
+                        </div>
+                    </ul>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</body>
+</html>

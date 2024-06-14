@@ -61,7 +61,7 @@ class TopAuthorNewWorkContent(TemplateBase):
         {order}、{author} {works_name}
         ①题材类型：{theme}
         ②核心亮点：{core_highlight}
-        ③开坑时间：{pit_date}
+        ③宣布开坑时间：{pit_date}
         ④AI评分：{ai_sore}
         详情见链接：{detail_url}
         ⑤原文链接：{src_url}
@@ -70,7 +70,7 @@ class TopAuthorNewWorkContent(TemplateBase):
     def __init__(self, templates: List[TopAuthorNewWorkTemplate]):
         self.templates = templates
 
-    def get_content(self):
+    def get_layout_content(self):
         content_list = []
         push_date = date.today().strftime("%d-%m")
         new_template = self.get_aligned_template()

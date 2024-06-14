@@ -1,6 +1,7 @@
 import re
 import os.path
 
+from flask import render_template
 from flask import send_from_directory
 from flask import Blueprint, request, jsonify
 
@@ -43,14 +44,14 @@ def download(filename):
 def push():
     templates = [
         TopAuthorNewWorkTemplate(
-            author="乔治·米勒", works_name="《疯狂的麦克斯：狂暴女神》",
+            author="乔治·米勒, 乔治·米勒,乔治·米勒", works_name="《疯狂的麦克斯：,狂暴女神,狂暴女神,狂暴女神》",
             core_highlight="弗瑞奥萨", theme="科幻/动作/惊悚/冒险",
             pit_date="2023-04-02", ai_sore="6.5",
             detail_url="https://movie.douban.com/subject/34996127/",
             src_url="https://movie.douban.com/subject/34996127/"
         )
     ]
-    content = TopAuthorNewWorkContent(templates).get_content()
+    content = TopAuthorNewWorkContent(templates).get_layout_content()
     MessageReply(group_remark="IP智能推荐机器人").simple_push(receiver="Meta", content=content)
 
     return jsonify(msg="ok", status=200, data=None)
@@ -58,6 +59,10 @@ def push():
 
 @blueprint.route('/callback', methods=['POST'])
 def callback_wecom():
+    # args: request.args
+    # form body: request.form
+    # json: request.form
+
     data = request.json
     logger.info("callback => data: %s", data)
 
@@ -86,3 +91,10 @@ def callback_wecom():
 
     return jsonify(msg="ok", status=200, data=None)
 
+
+@blueprint.route('/evaluation/detail', methods=['GET'])
+def ai_evaluation_detail():
+    params = request.args
+    rid = params.get("rid")
+    context = {}
+    return render_template("wecom/daxin.html", **context)

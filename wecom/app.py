@@ -12,6 +12,7 @@ from .core.extensions import (
     cache,
     csrf_protect,
     db,
+    login_manager,
     debug_toolbar,
     flask_static_digest,
     migrate,
