@@ -64,7 +64,7 @@ class TopAuthorNewWorkContent(TemplateBase):
         ③宣布开坑时间：{pit_date}
         ④AI评分：{ai_sore}
         详情见链接：{detail_url}
-        ⑤原文链接：{src_url}
+        ⑤出处链接：{src_url}
     """
 
     def __init__(self, templates: List[TopAuthorNewWorkTemplate]):

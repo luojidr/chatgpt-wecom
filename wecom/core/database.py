@@ -71,11 +71,24 @@ class PkModel(Model):
         return None
 
 
-class BaseModel(Model):
+class BaseModel(PkModel):
     __abstract__ = True
 
     create_time = Column(db.DateTime, nullable=False, default=func.now())
     update_time = Column(db.DateTime, nullable=False, default=func.now(), onupdate=func.now())
+
+    @classmethod
+    def fields(cls):
+        columns = []
+        excludes = ["id", "create_time", "update_time"]
+
+        for c in cls.__table__.columns:
+            if c.name in excludes:
+                continue
+
+            columns.append(c.name)
+
+        return columns
 
 
 def reference_col(

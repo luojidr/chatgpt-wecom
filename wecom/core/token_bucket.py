@@ -1,5 +1,6 @@
-import threading
 import time
+import threading
+from datetime import datetime
 
 
 class TokenBucket:
@@ -17,6 +18,7 @@ class TokenBucket:
         """生成令牌"""
         while self.is_running:
             with self.cond:
+                # print(f"{datetime.now()} _generate_tokens -> tokens: {self.tokens}")
                 if self.tokens < self.capacity:
                     self.tokens += 1
                 self.cond.notify()  # 通知获取令牌的线程
@@ -27,6 +29,7 @@ class TokenBucket:
         with self.cond:
             while self.tokens <= 0:
                 flag = self.cond.wait(self.timeout)
+                # print(f"{datetime.now()} get_token -> flag: {flag}, tokens: {self.tokens}")
                 if not flag:  # 超时
                     return False
             self.tokens -= 1
@@ -37,7 +40,7 @@ class TokenBucket:
 
 
 if __name__ == "__main__":
-    token_bucket = TokenBucket(20, None)  # 创建一个每分钟生产20个tokens的令牌桶
+    token_bucket = TokenBucket(100, None)  # 创建一个每分钟生产20个tokens的令牌桶
     # token_bucket = TokenBucket(20, 0.1)
     for i in range(3):
         if token_bucket.get_token():

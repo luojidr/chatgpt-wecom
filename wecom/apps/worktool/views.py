@@ -1,17 +1,29 @@
 import re
 import os.path
 
+from flask_login import login_required, login_user
 from flask import render_template
 from flask import send_from_directory
 from flask import Blueprint, request, jsonify
 
 from config import settings
 from wecom.bot.context import WTTextType
+from wecom.apps.user.models.user import WecomUser
 from wecom.utils.log import logger
 from wecom.utils.reply import MessageReply
 from wecom.utils.template import TopAuthorNewWorkTemplate, TopAuthorNewWorkContent
 
 blueprint = Blueprint("wecom", __name__, url_prefix="/wecom", static_folder="../static")
+
+
+@blueprint.route("/login", methods=["GET", "POST"])
+def login():
+    print("ppppppppppppppppppppppppppp")
+    print(request.args)
+    print(request.form)
+    current_user = WecomUser.query.get(1)
+    login_user(current_user)
+    return jsonify(msg="ok", status=200, data=None)
 
 
 @blueprint.route("/healthcheck")
@@ -53,7 +65,7 @@ def push():
         )
     ]
     content = TopAuthorNewWorkContent(templates).get_layout_content()
-    MessageReply(group_remark="IP智能推荐机器人").simple_push(receiver="Meta", content=content)
+    MessageReply(group_remark="IP智能推荐机器人").simple_push(receiver="杨昌", content=content)
 
     return jsonify(msg="ok", status=200, data=None)
 

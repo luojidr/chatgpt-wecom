@@ -38,10 +38,7 @@ CACHE_TYPE = (
     "flask_caching.backends.SimpleCache"  # Can be "MemcachedCache", "RedisCache", etc.
 )
 
-SQLALCHEMY_DATABASE_URI = env.str(
-    "DATABASE_URL",
-    default='mysql+pymysql://root:root@127.0.0.1:3306/fkcookiecutter?charset=utf8'
-)
+SQLALCHEMY_DATABASE_URI = env.str("DATABASE_URL")
 SQLALCHEMY_TRACK_MODIFICATIONS = True
 
 TIME_ZONE = None

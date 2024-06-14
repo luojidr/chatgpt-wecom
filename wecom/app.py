@@ -6,7 +6,8 @@ from flask import Flask, render_template
 
 from .apps import user, worktool
 from .core import commands
-from wecom.utils.log import get_logger
+from wecom.apps.user.models.user import WecomUser
+from .utils.log import get_logger, logger
 from .core.extensions import (
     bcrypt,
     cache,
@@ -42,7 +43,7 @@ def register_extensions(app):
     cache.init_app(app)
     db.init_app(app)
     csrf_protect.init_app(app)
-    # login_manager.init_app(app)
+    login_manager.init_app(app)
     debug_toolbar.init_app(app)
     migrate.init_app(app, db)
     flask_static_digest.init_app(app)
@@ -69,7 +70,7 @@ def register_errorhandlers(app):
         """Render error template."""
         # If a HTTPException, pull the `code` attribute; default to 500
         error_code = getattr(error, "code", 500)
-        print(f'register_errorhandlers => error_code: {error_code}')
+        app.logger.error('register_errorhandlers => error: %s', error)
         return render_template(f"{error_code}.html"), error_code
 
     for errcode in [401, 404, 500]:
@@ -97,3 +98,8 @@ def configure_logger(app):
     """Configure loggers."""
     get_logger(app=app)
 
+
+@login_manager.user_loader
+def load_user(user_id):
+    logger.info("load_user user_id: %s", user_id)
+    return WecomUser.query.get(1)
