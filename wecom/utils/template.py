@@ -58,7 +58,7 @@ class TopAuthorNewWorkTemplate:
 class TopAuthorNewWorkContent(TemplateBase):
     title = "[{push_date}] 今日高分IP推荐"
     template = """
-        {order}、{author} {works_name}
+        {order}、{author}《{works_name}》
         ①题材类型：{theme}
         ②核心亮点：{core_highlight}
         ③开坑时间：{pit_date}
