@@ -30,7 +30,7 @@ class ScriptDelivery(BaseModel):
     detail_url = Column(db.String(500), nullable=False, server_default='')              # 评估详情见链接
     src_url = Column(db.String(500), nullable=False, server_default='')                 # 原文链接
     uniq_id = Column(db.String(6), unique=True, nullable=False, server_default='')      # 唯一字段
-    id_pushed = Column(db.Boolean, nullable=False, default=False, server_default='0')   # 是否推送
+    is_pushed = Column(db.Boolean, nullable=False, default=False, server_default='0')   # 是否推送
     group_name = Column(db.String(100), nullable=False, server_default='')              # 要推送的群组
     pushed_time = Column(db.DateTime)                                                   # 推送时间
     finished_time = Column(db.DateTime)                                                 # 数据接收完成时间
@@ -79,7 +79,7 @@ class ScriptDelivery(BaseModel):
     @classmethod
     def get_required_script_delivery_list(cls):
         results = {}
-        queryset = cls.query.filter_by(id_pushed=False).order_by(cls.create_time.desc()).limit(3).all()
+        queryset = cls.query.filter_by(is_pushed=False).order_by(cls.create_time.desc()).limit(3).all()
 
         for group_name, objects in groupby(queryset, key=attrgetter("group_name")):
             results.setdefault(group_name, []).extend(objects)
@@ -92,7 +92,7 @@ class ScriptDelivery(BaseModel):
 
     @classmethod
     def update_push(cls, uniq_ids):
-        cls.query.filter(cls.uniq_id.in_(uniq_ids)).update({"id_pushed": 1, "pushed_time": func.now()})
+        cls.query.filter(cls.uniq_id.in_(uniq_ids)).update({"is_pushed": 1, "pushed_time": func.now()})
         db.session.commit()
 
 
