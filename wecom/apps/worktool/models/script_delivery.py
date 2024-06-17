@@ -79,7 +79,7 @@ class ScriptDelivery(BaseModel):
     @classmethod
     def get_required_script_delivery_list(cls):
         results = {}
-        queryset = cls.query.filter_by(is_pushed=False).order_by(cls.create_time.desc()).limit(3).all()
+        queryset = cls.query.filter_by(is_pushed=False).order_by(cls.create_time.desc()).limit(6).all()
 
         for group_name, objects in groupby(queryset, key=attrgetter("group_name")):
             results.setdefault(group_name, []).extend(objects)
