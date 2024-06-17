@@ -14,7 +14,7 @@ from environs import Env
 from dotenv import load_dotenv
 
 PROJECT_PATH = os.path.dirname(os.path.dirname(__file__))
-os.environ["APP_ENV"] = os.environ.get("APP_ENV", "DEV")      # Set app environ [DEV, PROD]
+os.environ["APP_ENV"] = os.environ.get("APP_ENV", "DEV")  # Set app environ [DEV, PROD]
 
 dotenv_path = os.path.join(PROJECT_PATH, "config", ".env", os.environ["APP_ENV"].lower())
 logging.warning("Project current settings path: %s", dotenv_path)
@@ -40,6 +40,10 @@ CACHE_TYPE = (
 
 SQLALCHEMY_DATABASE_URI = env.str("DATABASE_URL")
 SQLALCHEMY_TRACK_MODIFICATIONS = True
+SQLALCHEMY_BINDS = {
+    "workflow": env.str("WORKFLOW_DATABASE_URL"),
+    "novel_crawler": env.str("CRAWLER_DATABASE_URL"),
+}
 
 TIME_ZONE = None
 
@@ -66,3 +70,12 @@ WT_API_BASE = "https://api.worktool.ymdyes.cn"
 WT_ROBOT_ID = env.str("WT_ROBOT_ID")
 # WT_GROUP_NAMES = env.list("WT_GROUP_NAMES", subcast=str, delimiter=",")
 WT_GROUP_NAMES = json.loads(env.str("WT_GROUP_NAMES"))
+
+
+MIDDLEWARES = [
+    "wecom.core.middlewares.authentication.AuthTokenMiddleware"
+]
+
+EXEMPT_ENDPOINTS = [
+    "wecom/health_check",
+]

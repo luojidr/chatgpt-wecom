@@ -100,13 +100,17 @@ class MessageReply:
     def send_file(self):
         pass
 
-    def simple_push(self, receiver, content):
+    def simple_push(self, content, receiver: str = None, at_all: bool = False):
+        if not receiver and not at_all:
+            logger.info("推送不能为空")
+
         segments: List[str] = split_long_text_by_sentences(content)
         text_list: List[Dict[str, Any]] = [
             dict(
                 type=SendType.TEXT.value,
                 titleList=[self.group_remark],
-                receivedContent="@%s\n%s" % (receiver, seg)
+                receivedContent="\n%s" % seg,
+                atList=[receiver if receiver else "所有人"]
             )
             for seg in segments
         ]

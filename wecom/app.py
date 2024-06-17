@@ -6,6 +6,7 @@ from flask import Flask, render_template
 
 from .apps import user, worktool
 from .core import commands
+from config import settings
 from wecom.apps.user.models.user import WecomUser
 from .utils.log import get_logger, logger
 from .core.extensions import (
@@ -33,7 +34,9 @@ def create_app(config_object="config.settings"):
     register_errorhandlers(app)
     register_shellcontext(app)
     register_commands(app)
+    # register_middlewares(app)
     configure_logger(app)
+
     return app
 
 
@@ -43,7 +46,7 @@ def register_extensions(app):
     cache.init_app(app)
     db.init_app(app)
     csrf_protect.init_app(app)
-    login_manager.init_app(app)
+    # login_manager.init_app(app)
     debug_toolbar.init_app(app)
     migrate.init_app(app, db)
     flask_static_digest.init_app(app)
@@ -99,7 +102,18 @@ def configure_logger(app):
     get_logger(app=app)
 
 
-@login_manager.user_loader
-def load_user(user_id):
-    logger.info("load_user user_id: %s", user_id)
-    return WecomUser.query.get(1)
+def register_middlewares(app):
+    for middleware_path in reversed(settings.MIDDLEWARES):
+        try:
+            middleware = import_string(middleware_path)
+            mw_instance = middleware(app=self.app)
+
+            if not callable(mw_instance):
+                raise CallableError("middleware: %s must callable.")
+
+            mw_instance.logger = logger
+        except (ImportError, CallableError) as e:
+            logger.error(traceback.format_exc())
+            raise e
+        else:
+            self.app.before_request(mw_instance.__call__)

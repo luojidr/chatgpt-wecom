@@ -1,8 +1,10 @@
 import random
 import string
+import uuid
 import traceback
 
-from flask_login import UserMixin, login_user
+# from flask_login import UserMixin, login_user
+from flask_security import Security, SQLAlchemySessionUserDatastore, UserMixin, RoleMixin, login_required
 from sqlalchemy.orm import load_only
 from sqlalchemy import Column, Enum, String, Boolean, Integer
 
@@ -19,7 +21,7 @@ from wecom.core.database import Column, PkModel, db, reference_col, relationship
 from wecom.core.extensions import bcrypt
 
 
-class Role(PkModel):
+class Role(BaseModel):
     """A role for a user."""
     __tablename__ = "roles"
     __table_args__ = {'extend_existing': True}
@@ -77,16 +79,18 @@ class User(UserMixin, BaseModel):
         return f"<User({self.username!r})>"
 
 
+# flask-sqlalchemy 标准格式
 class WecomUser(BaseModel, UserMixin):
     __tablename__ = 'wecom_user'
 
-    username = Column(String(100), nullable=False, server_default="")
-    user_id = Column(Integer, nullable=False, server_default='0')
-    email = Column(String(100), nullable=False, server_default="")
-    mobile = Column(String(100), nullable=False, server_default="")
-    source = Column(Enum("wx", "qywx", "dingtalk", "feishu"), nullable=False)
-    is_enabled = Column(Boolean, nullable=False, server_default="0")
-    is_push = Column(Boolean, nullable=False, server_default="0")
+    username = Column(db.String(100), nullable=False, server_default="")
+    user_id = Column(db.Integer, nullable=False, server_default='0')
+    email = Column(db.String(100), nullable=False, server_default="")
+    mobile = Column(db.String(100), nullable=False, server_default="")
+    source = Column(db.Enum("wx", "qywx", "dingtalk", "feishu"), nullable=False)
+    is_enabled = Column(db.Boolean, nullable=False, server_default="0")
+    is_push = Column(db.Boolean, nullable=False, server_default="0")
+    fs_uniquifier = Column(db.String(64), unique=True, nullable=False, default=lambda: str(uuid.uuid4()))
 
     @classmethod
     def get_unique_user_id(cls, k=6):

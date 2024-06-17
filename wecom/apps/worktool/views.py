@@ -1,14 +1,16 @@
+import json
 import re
 import os.path
 
-from flask_login import login_required, login_user
+# from flask_login import login_required, login_user
 from flask import render_template
 from flask import send_from_directory
 from flask import Blueprint, request, jsonify
+# from flask_security import login_required
 
 from config import settings
 from wecom.bot.context import WTTextType
-from wecom.apps.user.models.user import WecomUser
+from wecom.apps.worktool.models.script_delivery import ScriptDelivery
 from wecom.utils.log import logger
 from wecom.utils.reply import MessageReply
 from wecom.utils.template import TopAuthorNewWorkTemplate, TopAuthorNewWorkContent
@@ -16,17 +18,8 @@ from wecom.utils.template import TopAuthorNewWorkTemplate, TopAuthorNewWorkConte
 blueprint = Blueprint("wecom", __name__, url_prefix="/wecom", static_folder="../static")
 
 
-@blueprint.route("/login", methods=["GET", "POST"])
-def login():
-    print("ppppppppppppppppppppppppppp")
-    print(request.args)
-    print(request.form)
-    current_user = WecomUser.query.get(1)
-    login_user(current_user)
-    return jsonify(msg="ok", status=200, data=None)
-
-
 @blueprint.route("/healthcheck")
+# @login_required
 def healthcheck():
     """ healthcheck """
     return jsonify(msg="ok", status=200, data=None)
@@ -54,18 +47,28 @@ def download(filename):
 
 @blueprint.route("/push")
 def push():
-    templates = [
-        TopAuthorNewWorkTemplate(
-            author="绿药", works_name="《婀娜扶阙》",
-            core_highlight="撩了就跑却撩个神经病",
-            theme="科原创-言情-架空历史-爱情",
-            pit_date="2023-06-25", ai_sore="7.5",
-            detail_url="http://8.217.15.229:9999/wecom/evaluation?rid=6695210969274f4b94d0a295f51bd5db",
-            src_url="https://www.jjwxc.net/onebook.php?novelid=6436403"
-        )
-    ]
-    content = TopAuthorNewWorkContent(templates).get_layout_content()
-    MessageReply(group_remark="IP智能推荐机器人").simple_push(receiver="杨昌", content=content)
+    results = ScriptDelivery.get_required_script_delivery_list()
+
+    for group_name, objects in results.items():
+        templates = []
+        uniq_ids = []
+
+        for obj in objects:
+            templates.append(
+                TopAuthorNewWorkTemplate(
+                    author=obj.author, works_name=obj.work_name,
+                    theme=obj.theme, core_highlight=obj.core_highlight,
+                    pit_date=obj.pit_date or "暂无", ai_score=obj.ai_score,
+                    detail_url=obj.detail_url or "暂无", src_url=obj.src_url or "暂无"
+                )
+            )
+            uniq_ids.append(obj.uniq_id)
+
+        if uniq_ids:
+            ScriptDelivery.update_push(uniq_ids)
+
+            content = TopAuthorNewWorkContent(templates).get_layout_content()
+            MessageReply(group_remark=group_name).simple_push(content=content, receiver="所有人")
 
     return jsonify(msg="ok", status=200, data=None)
 
@@ -107,7 +110,66 @@ def callback_wecom():
 
 @blueprint.route('/evaluation', methods=['GET'])
 def ai_evaluation_detail():
+    def get_pattern(regex, string, pos="first"):
+        iter_list = list(regex.finditer(string))
+        data_list = []
+
+        for index, itor in enumerate(iter_list):
+            end = itor.end()
+
+            if index < len(iter_list) - 1:
+                value = string[end: iter_list[index + 1].start()]
+            else:
+                value = string[end:]
+
+            vals = value.strip().split("\n")
+            vals = [s.lstrip(" -") for s in vals]
+
+            if pos == "first":
+                data_list.append(dict(title=itor.group(0), vals=vals))
+            elif pos == "mid":
+                data_list.append(dict(vals=[itor.group(0) + "".join(vals)]))
+            elif pos == "tail":
+                data_list.append(dict(vals=[itor.group(0) + s for s in vals]))
+
+        return data_list
+
     params = request.args
-    rid = params.get("rid")
-    context = {}
-    return render_template("wecom/daxin.html", **context)
+    instance = ScriptDelivery.get_script_delivery_by_uniq_id(uniq_id=params.get("tid"))
+
+    if not instance:
+        return "<html>404</html>"
+
+    input_list = []
+    output = json.loads(instance.output)
+    input_fields = output["ui_design"]["inputFields"]
+    output_nodes = output["ui_design"]["outputNodes"]
+
+    for input_item in input_fields:
+        input_list.append(dict(
+            name=input_item["name"],
+            text=input_item["value"],
+        ))
+
+    regex1 = re.compile(r"【(.*?)】：", re.M | re.S)
+    regex2 = re.compile(r"\d\.", re.M | re.S)
+
+    output_list = [
+        dict(
+            name=output_nodes[0]["data"]["template"]["output_title"]["value"],
+            vals=get_pattern(regex1, output_nodes[0]["data"]["template"]["text"]["value"]),
+        ),
+
+        dict(
+            name=output_nodes[1]["data"]["template"]["output_title"]["value"],
+            vals=get_pattern(regex2, output_nodes[1]["data"]["template"]["text"]["value"], pos="mid"),
+        ),
+
+        dict(
+            name=output_nodes[2]["data"]["template"]["output_title"]["value"],
+            vals=get_pattern(regex1, output_nodes[2]["data"]["template"]["text"]["value"], pos="tail"),
+        ),
+    ]
+
+    context = {"input_list": input_list, "output_list": output_list}
+    return render_template("wecom/evaluation_detail.html", **context)

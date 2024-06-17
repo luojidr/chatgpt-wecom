@@ -1,9 +1,24 @@
 # -*- coding: utf-8 -*-
 """Create an application instance."""
+from flask_security.utils import hash_password
+from flask_security import Security, SQLAlchemySessionUserDatastore
 
 from wecom.app import create_app
+from wecom.core.database import db
+from wecom.apps.user.models.user import WecomUser, Role
 
 app = create_app()
+
+user_datastore = SQLAlchemySessionUserDatastore(db.session, WecomUser, Role)
+# security = Security(app, user_datastore)
+
+
+# @app.before_first_request
+def create_user():
+    db.create_all()
+    if not user_datastore.find_user(email="test@example.com"):
+        user_datastore.create_user(email="test@example.com", password=hash_password("password"))
+        db.session.commit()
 
 
 if __name__ == '__main__':

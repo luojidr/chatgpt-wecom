@@ -18,4 +18,4 @@ cache = Cache()
 debug_toolbar = DebugToolbarExtension()
 flask_static_digest = FlaskStaticDigest()
 
-login_manager.login_view = "wecom.login"
+# login_manager.login_view = "wecom.login"
