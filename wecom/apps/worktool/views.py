@@ -47,6 +47,10 @@ def download(filename):
 
 @blueprint.route("/push")
 def push():
+    is_online = MessageReply().get_rebot_status()
+    if not is_online:
+        return jsonify(msg="rebot is offline", status=5003, data=None)
+
     results = ScriptDelivery.get_required_script_delivery_list()
 
     for group_name, objects in results.items():
