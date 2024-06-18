@@ -13,6 +13,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import load_only
 from sqlalchemy import Column, Integer, String, Float, Enum, Text
 
+from .workflowrunrecord import WorkflowRunRecord
 from wecom.core.database import db, Column, BaseModel
 
 
@@ -89,8 +90,14 @@ class ScriptDelivery(BaseModel):
         return results
 
     @classmethod
-    def get_script_delivery_by_uniq_id(cls, uniq_id):
-        return cls.query.filter_by(uniq_id=uniq_id).first()
+    def get_output_by_uniq_id(cls, uniq_id):
+        obj = cls.query.filter_by(uniq_id=uniq_id).first()
+        if obj:
+            run_obj = WorkflowRunRecord.query\
+                .options(load_only(WorkflowRunRecord.general_details))\
+                .filter_by(rid=obj.rid)\
+                .first()
+            return run_obj and run_obj.general_details
 
     @classmethod
     def update_push(cls, uniq_ids):

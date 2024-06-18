@@ -74,7 +74,7 @@ def push():
             ScriptDelivery.update_push(uniq_ids)
 
             content = TopAuthorNewWorkContent(templates).get_layout_content()
-            MessageReply(group_remark=group_name).simple_push(content=content, receiver="所有人", max_length=650)
+            MessageReply(group_remark=group_name).simple_push(content=content, receiver="所有人", max_length=670)
 
     return jsonify(msg="ok", status=200, data=None)
 
@@ -147,13 +147,13 @@ def ai_evaluation_detail():
         return data_list
 
     params = request.args
-    instance = ScriptDelivery.get_script_delivery_by_uniq_id(uniq_id=params.get("tid"))
+    output_str = ScriptDelivery.get_output_by_uniq_id(uniq_id=params.get("tid"))
 
-    if not instance:
+    if not output_str:
         return "<html>404</html>"
 
     input_list = []
-    output = json.loads(instance.output)
+    output = json.loads(output_str)
     input_fields = output["ui_design"]["inputFields"]
     output_nodes = output["ui_design"]["outputNodes"]
 
