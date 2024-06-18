@@ -24,8 +24,8 @@ class ScriptDelivery(BaseModel):
     author = Column(db.String(100), nullable=False, server_default='')                  # 作者
     work_name = Column(db.String(200), nullable=False, server_default='')               # 作品名
     theme = Column(db.String(200), nullable=False, server_default='')                   # 题材类型
-    core_highlight = Column(db.String(200), nullable=False, server_default='')          # 核心亮点
-    core_idea = Column(db.String(300), nullable=False, server_default='')               # 核心创意
+    core_highlight = Column(db.String(500), nullable=False, server_default='')          # 核心亮点
+    core_idea = Column(db.String(500), nullable=False, server_default='')               # 核心创意
     pit_date = Column(db.String(20), nullable=False, server_default='')                 # 开坑时间
     ai_score = Column(db.String(20), nullable=False, server_default='')                  # AI评分
     detail_url = Column(db.String(500), nullable=False, server_default='')              # 评估详情见链接

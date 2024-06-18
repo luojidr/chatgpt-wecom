@@ -14,6 +14,7 @@ from wecom.apps.worktool.models.script_delivery import ScriptDelivery
 from wecom.utils.log import logger
 from wecom.utils.reply import MessageReply
 from wecom.utils.template import TopAuthorNewWorkTemplate, TopAuthorNewWorkContent
+from scripts.sync_script_delivery import SyncScriptDelivery
 
 blueprint = Blueprint("wecom", __name__, url_prefix="/wecom", static_folder="../static")
 
@@ -76,6 +77,12 @@ def push():
             MessageReply(group_remark=group_name).simple_push(content=content, receiver="所有人")
 
     return jsonify(msg="ok", status=200, data=None)
+
+
+@blueprint.route('/sync_script_delivery', methods=['POST'])
+def sync_script_delivery():
+    SyncScriptDelivery().parse_records()
+    return jsonify(msg="sync_script_delivery is ok", status=200, data=None)
 
 
 @blueprint.route('/callback', methods=['POST'])
