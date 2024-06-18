@@ -72,7 +72,7 @@ class TopAuthorNewWorkContent(TemplateBase):
 
     def get_layout_content(self):
         content_list = []
-        push_date = date.today().strftime("%d-%m")
+        push_date = date.today().strftime("%m-%d")
         new_template = self.get_aligned_template()
 
         for order, template in enumerate(self.templates, 1):
