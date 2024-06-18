@@ -100,11 +100,11 @@ class MessageReply:
     def send_file(self):
         pass
 
-    def simple_push(self, content, receiver: str = None, at_all: bool = False):
+    def simple_push(self, content, receiver: str = None, at_all: bool = False, max_length: int = 600):
         if not receiver and not at_all:
             logger.info("推送不能为空")
 
-        segments: List[str] = split_long_text_by_sentences(content)
+        segments: List[str] = split_long_text_by_sentences(content, max_length=max_length)
         text_list: List[Dict[str, Any]] = [
             dict(
                 type=SendType.TEXT.value,

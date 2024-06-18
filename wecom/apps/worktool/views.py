@@ -74,7 +74,7 @@ def push():
             ScriptDelivery.update_push(uniq_ids)
 
             content = TopAuthorNewWorkContent(templates).get_layout_content()
-            MessageReply(group_remark=group_name).simple_push(content=content, receiver="所有人")
+            MessageReply(group_remark=group_name).simple_push(content=content, receiver="所有人", max_length=650)
 
     return jsonify(msg="ok", status=200, data=None)
 
