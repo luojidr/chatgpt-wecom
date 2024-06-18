@@ -62,6 +62,7 @@ def push():
                 TopAuthorNewWorkTemplate(
                     author=obj.author, works_name=obj.work_name,
                     theme=obj.theme, core_highlight=obj.core_highlight,
+                    core_idea=obj.core_idea,
                     pit_date=obj.pit_date or "暂无", ai_score=obj.ai_score,
                     detail_url=obj.detail_url or "暂无", src_url=obj.src_url or "暂无"
                 )

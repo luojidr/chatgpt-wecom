@@ -25,6 +25,7 @@ class ScriptDelivery(BaseModel):
     work_name = Column(db.String(200), nullable=False, server_default='')               # 作品名
     theme = Column(db.String(200), nullable=False, server_default='')                   # 题材类型
     core_highlight = Column(db.String(200), nullable=False, server_default='')          # 核心亮点
+    core_idea = Column(db.String(300), nullable=False, server_default='')               # 核心创意
     pit_date = Column(db.String(20), nullable=False, server_default='')                 # 开坑时间
     ai_score = Column(db.String(20), nullable=False, server_default='')                  # AI评分
     detail_url = Column(db.String(500), nullable=False, server_default='')              # 评估详情见链接
@@ -32,6 +33,7 @@ class ScriptDelivery(BaseModel):
     uniq_id = Column(db.String(6), unique=True, nullable=False, server_default='')      # 唯一字段
     is_pushed = Column(db.Boolean, nullable=False, default=False, server_default='0')   # 是否推送
     group_name = Column(db.String(100), nullable=False, server_default='')              # 要推送的群组
+    is_delete = Column(db.Boolean, nullable=False, default=False, server_default='0')   # 是否删除
     pushed_time = Column(db.DateTime)                                                   # 推送时间
     finished_time = Column(db.DateTime)                                                 # 数据接收完成时间
 
@@ -57,7 +59,7 @@ class ScriptDelivery(BaseModel):
 
         author = values.get("author")
         work_name = values.get("work_name")
-        instance = cls.query.filter_by(author=author, work_name=work_name).first()
+        instance = cls.query.filter_by(author=author, work_name=work_name, is_delete=False).first()
 
         if instance is None:
             instance = cls(**values)
@@ -79,7 +81,7 @@ class ScriptDelivery(BaseModel):
     @classmethod
     def get_required_script_delivery_list(cls):
         results = {}
-        queryset = cls.query.filter_by(is_pushed=False).order_by(cls.create_time.desc()).limit(6).all()
+        queryset = cls.query.filter_by(is_pushed=False, is_delete=False).order_by(cls.create_time.desc()).limit(6).all()
 
         for group_name, objects in groupby(queryset, key=attrgetter("group_name")):
             results.setdefault(group_name, []).extend(objects)

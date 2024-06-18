@@ -32,13 +32,14 @@ class TopAuthorNewWorkTemplate:
     """ 头部作者新作推荐 """
     def __init__(self,
                  author: str, works_name: str, theme: str, core_highlight: str,
-                 pit_date: str, ai_score: str, detail_url: str, src_url: str
+                 core_idea: str, pit_date: str, ai_score: str, detail_url: str, src_url: str
                  ):
         """
         :param author: 作者名
         :param works_name: 作品名
         :param theme: 题材类型
         :param core_highlight: 核心亮点
+        :param core_idea: 核心创意
         :param pit_date: 开坑时间 0000-00-00
         :param ai_score: AI评分
         :param detail_url: 评估详情见链接
@@ -49,6 +50,7 @@ class TopAuthorNewWorkTemplate:
         self.theme = theme
         self.author = author
         self.core_highlight = core_highlight
+        self.core_idea = core_idea
         self.pit_date = pit_date
         self.ai_score = ai_score
         self.detail_url = detail_url
@@ -61,10 +63,11 @@ class TopAuthorNewWorkContent(TemplateBase):
         {order}、{author}《{works_name}》
         ①题材类型：{theme}
         ②核心亮点：{core_highlight}
-        ③开坑时间：{pit_date}
-        ④AI评分：{ai_score}
-        详情见链接：{detail_url}
-        ⑤出处链接：{src_url}
+        ③核心亮点：{core_idea}
+        ④开坑时间：{pit_date}
+        ⑤AI评分：{ai_score}
+          评分链接：{detail_url}
+        ⑥出处链接：{src_url}
     """
 
     def __init__(self, templates: List[TopAuthorNewWorkTemplate]):
