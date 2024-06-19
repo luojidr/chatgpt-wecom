@@ -1,3 +1,4 @@
+import re
 from datetime import date
 from typing import List
 
@@ -5,7 +6,7 @@ from typing import List
 class TemplateBase:
     template = None
 
-    def get_aligned_template(self):
+    def get_aligned_template_items(self):
         assert self.template, "模版不能为空"
 
         space_cnt = 0
@@ -18,14 +19,13 @@ class TemplateBase:
             else:
                 break
 
-        print(space_cnt)
         for line in parts:
             if not line[:space_cnt].strip():
                 results.append(line[space_cnt:])
             else:
                 results.append(line)
 
-        return "\n".join(results)
+        return results
 
 
 class TopAuthorNewWorkTemplate:
@@ -58,29 +58,47 @@ class TopAuthorNewWorkTemplate:
 
 
 class TopAuthorNewWorkContent(TemplateBase):
-    title = "[{push_date}] 今日高分IP推荐"
+    title = "[{push_date}] 今日高分IP推荐\n"
     template = """
-        {order}、{author}《{works_name}》
-        ①题材类型：{theme}
-        ②核心亮点：{core_highlight}
-        ③核心亮点：{core_idea}
-        ④开坑时间：{pit_date}
-        ⑤AI评分：{ai_score}
+        {number}、{author}《{works_name}》
+        {order}题材类型：{theme}
+        {order}核心亮点：{core_highlight}
+        {order}核心亮点：{core_idea}
+        {order}开坑时间：{pit_date}
+        {order}AI评分：{ai_score}
           评分链接：{detail_url}
-        ⑥出处链接：{src_url}
+        {order}出处链接：{src_url}
     """
 
     def __init__(self, templates: List[TopAuthorNewWorkTemplate]):
         self.templates = templates
+        self.order_mapping = {
+            1: "①", 2: "②", 3: "③", 4: "④", 5: "⑤",
+            6: "⑥", 7: "⑦", 8: "⑧", 9: "⑧", 10: "⑩"
+        }
 
     def get_layout_content(self):
         content_list = []
+        pattern = re.compile(r'：\{(.*?)\}')
         push_date = date.today().strftime("%m-%d")
-        new_template = self.get_aligned_template()
+        template_items = self.get_aligned_template_items()
 
-        for order, template in enumerate(self.templates, 1):
-            kwargs = dict(order=order, **template.__dict__)
-            content_list.append(new_template.format(**kwargs))
+        for number, template in enumerate(self.templates, 1):
+            order_index = 0
+            kwargs = dict(number=number, **template.__dict__)
+            text_list = [template_items[0].format(**kwargs)]
 
-        return self.title.format(push_date=push_date) + "\n" + "\n".join(content_list)
+            for line_str in template_items[1:]:
+                match = pattern.search(line_str)
+
+                if match:
+                    target_name = match.group(1)
+                    if kwargs.get(target_name):
+                        order_index += 1
+                        kwargs["order"] = self.order_mapping[order_index]
+                        text_list.append(line_str.format(**kwargs))
+
+            content_list.append("\n".join(text_list) + "\n")
+
+        return self.title.format(push_date=push_date) + "\n".join(content_list).strip()
 
