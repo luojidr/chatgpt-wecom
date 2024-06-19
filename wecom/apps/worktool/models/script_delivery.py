@@ -3,7 +3,7 @@ import random
 import os.path
 from itertools import groupby
 from operator import attrgetter
-from datetime import date
+from datetime import date, datetime, timedelta
 from typing import Optional, Dict, List
 
 from sqlalchemy import func
@@ -56,9 +56,14 @@ class ScriptDelivery(BaseModel):
         fields = cls.fields()
         values = {key: val for key, val in kwargs.items() if key in fields}
 
-        author = values.get("author")
-        work_name = values.get("work_name")
-        instance = cls.query.filter_by(author=author, work_name=work_name, is_delete=False).first()
+        instance = cls.query\
+            .filter_by(
+                author=values.get("author"),
+                work_name=values.get("work_name"),
+                group_name=values.get("group_name"),
+                is_delete=False
+            )\
+            .first()
 
         if instance is None:
             instance = cls(**values)
@@ -97,6 +102,32 @@ class ScriptDelivery(BaseModel):
                 .filter_by(rid=obj.rid)\
                 .first()
             return run_obj and run_obj.general_details
+
+    @classmethod
+    def get_latest_push_date_by_group_name(cls, group_name):
+        objs = cls.query\
+            .options(load_only(cls.push_date))\
+            .filter_by(group_name=group_name)\
+            .order_by(cls.push_date.desc())\
+            .limit(2)\
+            .all()
+
+        if not objs:
+            is_new = True
+            push_date = date.today()
+        else:
+            push_date = datetime.strptime(objs[0].push_date, "%Y-%m-%d").date()
+
+            if len(objs) == 1:
+                is_new = False
+            else:
+                if objs[0].push_date == objs[1].push_date:
+                    is_new = True
+                    push_date = push_date + timedelta(days=1)
+                else:
+                    is_new = False
+
+        return is_new, push_date
 
     @classmethod
     def update_push(cls, uniq_ids):

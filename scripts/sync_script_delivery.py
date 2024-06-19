@@ -3,7 +3,7 @@ import re
 import os.path
 import itertools
 from operator import itemgetter
-from datetime import date, timedelta
+from datetime import timedelta
 from urllib.parse import urlparse, parse_qs
 
 from sqlalchemy.orm import load_only
@@ -163,18 +163,36 @@ class SyncScriptDeliveryRules:
         # ok_results.sort(key=lambda x: float(x["ai_score"]), reverse=True)
 
         step = 2
-        log_msg = "group_name: %s, push_date: %s, rid: %s, author: %s, work_name: %s, ai_score：%s"
+        log_msg = "==>> group_name: %s, push_date: %s, rid: %s, author: %s, work_name: %s, ai_score：%s"
 
         for group_name, iterator in itertools.groupby(ok_results, key=itemgetter("group_name")):
-            values = list(iterator)
-            group_values = [values[i:i + step] for i in range(0, len(values), step)]
-            push_date = date.today()
+            # 再次去除重复的数据(作者+书名)
+            values = []
+            author_books_set = set()
 
-            for day, each_values in enumerate(group_values):
-                push_date = push_date + timedelta(days=day)
-                push_date_str = push_date.strftime("%Y-%m-%d")
+            for item in list(iterator):
+                key = item["author"] + "|" + item["work_name"]
+                if key not in author_books_set:
+                    author_books_set.add(key)
+                    values.append(item)
 
-                for each_item in values:
+            # 计算 push_date
+            is_new, push_date = ScriptDelivery.get_latest_push_date_by_group_name(group_name)
+            tmp_push_date = push_date - timedelta(days=1)
+
+            # 每 step 个分组
+            group_values = []
+            if not is_new and values:
+                group_values.append([values.pop(0)])
+            group_values.extend([values[i:i + step] for i in range(0, len(values), step)])
+
+            for each_values in group_values:
+                tmp_push_date = tmp_push_date + timedelta(days=1)
+                push_date_str = tmp_push_date.strftime("%Y-%m-%d")
+
+                for each_item in each_values:
+                    each_item["push_date"] = push_date_str
+
                     log_args = (
                         group_name, push_date_str, each_item["rid"],
                         each_item["author"], each_item["work_name"], each_item["ai_score"]
