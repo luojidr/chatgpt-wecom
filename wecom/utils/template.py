@@ -63,7 +63,7 @@ class TopAuthorNewWorkContent(TemplateBase):
         {number}、{author}《{works_name}》
         {order}题材类型：{theme}
         {order}核心亮点：{core_highlight}
-        {order}核心亮点：{core_idea}
+        {order}核心创意：{core_idea}
         {order}开坑时间：{pit_date}
         {order}AI评分：{ai_score}
           评分链接：{detail_url}
