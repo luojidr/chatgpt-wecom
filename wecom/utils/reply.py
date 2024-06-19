@@ -59,7 +59,7 @@ class MessageReply:
     @retry(stop=stop_after_attempt(max_attempt_number=settings.MAX_RETRY_TIMES))
     def request(self, api, payload=None, params=None, method="POST"):
         assert method in ["POST", "GET"], "request is invalid!"
-        logger.info("MessageReply.%s => api: %s, payload: %s, params: %s", method.lower(), api, payload, params)
+        logger.info("MessageReply => method:%s, api:%s, payload:%s, params:%s", method.lower(), api, payload, params)
 
         headers = {
             "User-Agent": UserAgent().random,
@@ -75,11 +75,11 @@ class MessageReply:
 
             method = method.lower()
             r = requests.request(method, api, **kwargs)
-            logger.info("MessageReply.%s => result: %s", method, r.json())
+            logger.info("MessageReply => result: %s", r.json())
 
             return r.json()
         except Exception as e:
-            logger.error("MessageReply.%s error: %s", method, e)
+            logger.error("MessageReply => error: %s", e)
             logger.error(traceback.format_exc())
 
     def send_text(self, query, receiver):

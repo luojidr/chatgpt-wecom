@@ -1,12 +1,9 @@
-import re
-import time
 import string
 import random
 import os.path
-import traceback
 from itertools import groupby
 from operator import attrgetter
-from collections import namedtuple
+from datetime import date
 from typing import Optional, Dict, List
 
 from sqlalchemy import func
@@ -34,6 +31,7 @@ class ScriptDelivery(BaseModel):
     uniq_id = Column(db.String(6), unique=True, nullable=False, server_default='')      # 唯一字段
     is_pushed = Column(db.Boolean, nullable=False, default=False, server_default='0')   # 是否推送
     group_name = Column(db.String(100), nullable=False, server_default='')              # 要推送的群组
+    push_date = Column(db.String(10), nullable=False, server_default='')                # 要推送的日期
     is_delete = Column(db.Boolean, nullable=False, default=False, server_default='0')   # 是否删除
     pushed_time = Column(db.DateTime)                                                   # 推送时间
     finished_time = Column(db.DateTime)                                                 # 数据接收完成时间
@@ -82,7 +80,8 @@ class ScriptDelivery(BaseModel):
     @classmethod
     def get_required_script_delivery_list(cls):
         results = {}
-        queryset = cls.query.filter_by(is_pushed=False, is_delete=False).order_by(cls.create_time.desc()).limit(6).all()
+        push_date = date.today().strftime("%Y-%m-%d")
+        queryset = cls.query.filter_by(push_date=push_date, is_pushed=False, is_delete=False).all()
 
         for group_name, objects in groupby(queryset, key=attrgetter("group_name")):
             results.setdefault(group_name, []).extend(objects)

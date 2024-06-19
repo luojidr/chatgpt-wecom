@@ -1,50 +1,51 @@
 import json
 import re
 import os.path
-import logging
+import itertools
+from operator import itemgetter
+from datetime import date, timedelta
 from urllib.parse import urlparse, parse_qs
 
 from sqlalchemy.orm import load_only
-from sqlalchemy import desc, cast, DECIMAL
 
-# 但脚本执行时
+# 单脚本执行时
 # os.environ["APP_ENV"] = "PROD"
 
 from config import settings
+from wecom.utils.log import logger
 from wecom.apps.worktool.models.script_delivery import ScriptDelivery
 from wecom.apps.worktool.models.workflowrunrecord import WorkflowRunRecord
 
 
-class SyncScriptDelivery:
+class SyncScriptDeliveryRules:
+    """ 同步规则：
+    1) 推送团队: team1, team2, team2, ......
+    2) 按照每个团队的规则进行数据匹配：如 team1 匹配数据 n1 条，team1 匹配数据 n2 条；每个团队的数据可能有交集。
+    3) 推送条数控制：每个团队最多只匹配2条，目前各个团队各退各的，即使数据有交集。
+    4) 同步数量控制：每日同步按评分最高的取前两条，每个团队有就推送，没有就不推送。
+    5) 如果 team1 匹配了5条，那么当天退了2调后，其他的3条T+1,T+2接着推，如此反复
+    """
+
     def __init__(self, workflow_id: str = None, user_id: str = None):
         self.workflow_id = workflow_id or os.environ["SYNC_WORKFLOW_ID"]
         self.user_id = user_id or os.environ["SYNC_USER_ID"]
-        self.min_ai_score = 8.3
+        self.min_ai_score = 8.5
 
-        logging.warning("SyncScriptDelivery => init workflow_id: %s, user_id: %s", self.workflow_id, self.user_id)
+        logger.info("SyncScriptDelivery => init workflow_id: %s, user_id: %s", self.workflow_id, self.user_id)
 
-    def parse_url_params(self, url):
-        # 解析 URL
-        parsed_url = urlparse(url)
-
-        # 获取 URL 的 fragment 部分
-        fragment = parsed_url.fragment
-
-        # 解析 fragment 中的参数
-        fragment_params = urlparse(f"//{fragment}")
-
-        # 获取查询参数
-        query_params = parse_qs(fragment_params.query)
+    @staticmethod
+    def parse_url_params(url):
+        parsed_url = urlparse(url)  # 解析 URL
+        fragment = parsed_url.fragment  # 获取 URL 的 fragment 部分
+        fragment_params = urlparse(f"//{fragment}")  # 解析 fragment 中的参数
+        query_params = parse_qs(fragment_params.query)  # 获取查询参数
 
         return query_params
 
-    def get_which_teams_from_input(self, input_fields):
-        mapping = {
-            "豆瓣小说": "豆瓣",
-            "番茄小说": "番茄",
-            "起点小说": "起点",
-        }
+    @staticmethod
+    def get_which_teams_from_input(input_fields):
         team_name_set = set()
+        mapping = {"豆瓣小说": "豆瓣", "番茄小说": "番茄", "起点小说": "起点"}
 
         name_list = [item["value"] for item in input_fields if item["display_name"] == "小说平台"]
         name = name_list[0] if name_list else None
@@ -58,10 +59,10 @@ class SyncScriptDelivery:
 
             for matching_item in team_items["matching_list"]:
                 for key, values in matching_item.items():
-                    if (name and name == key) and (type_list and type_list == values):
+                    if name == key and type_list == values:
                         team_name_set.add(team_name)
 
-        logging.warning("匹配到团队: %s", team_name_set)
+        logger.info("匹配到团队: %s", team_name_set)
         return list(team_name_set)
 
     def get_matching_rids_from_output(self, output_nodes):
@@ -81,7 +82,7 @@ class SyncScriptDelivery:
         return results
 
     def get_team_run_records_mapping(self):
-        # {team_name: [rid1,rid2]}
+        # team_data = {team_name1: [rid1, rid2], team_name2: [rid3, rid4], ......}
         team_data = {}
         queryset = WorkflowRunRecord.query\
             .options(load_only(WorkflowRunRecord.rid, WorkflowRunRecord.general_details, WorkflowRunRecord.parent_wid)) \
@@ -99,15 +100,9 @@ class SyncScriptDelivery:
             for team_name in team_name_list:
                 rids = self.get_matching_rids_from_output(output_nodes=output_nodes)
                 team_data.setdefault(team_name, []).extend(rids)
-                logging.warning("=>>> 团队: %s, rids: %s", team_name, rids)
+                logger.info("=>>> 团队: %s, rids: %s", team_name, rids)
 
         return team_data
-
-    def is_existed(self, author, work_name, group_name):
-        # 重复的过滤
-        # 只要同作者、作品和所属团队 存在的就不新增
-        obj = ScriptDelivery.query.filter_by(author=author, work_name=work_name, group_name=group_name).first()
-        return bool(obj)
 
     def get_values_from_input(self, input_fields):
         data = {}
@@ -130,39 +125,28 @@ class SyncScriptDelivery:
     def get_values_from_output(self, output_nodes):
         data = {}
         long_text = ""
+        pattern_list = [
+            # 题材类型
+            {"key": "theme", "pattern": re.compile(r"【题材类型】：(.*?)【", re.S | re.M)},
+            # AI评分
+            {"key": "ai_score", "pattern": re.compile(r"【总体评价】.*?总评分.*?(\d+\.\d+)", re.S | re.M)},
+            # 核心亮点
+            {"key": "core_highlight", "pattern": re.compile(r"【故事Slogan】：(.*)【|【故事Solgan】：(.*)【", re.S | re.M)},
+            # 核心创意
+            {"key": "core_idea", "pattern": re.compile(r"【核心创意】：(.*)$", re.S | re.M)},
+        ]
 
         for output in output_nodes[:3]:
             template = output["data"]["template"]
             text = template["text"]["value"]
             long_text += text
 
-        # 题材类型
-        theme_regex = re.compile(r"【题材类型】：(.*?)【", re.S | re.M)
-        theme_match = theme_regex.search(long_text)
-        if theme_match:
-            theme = theme_match.group(1).strip()
-            data["theme"] = theme
-
-        # AI评分
-        score_regex = re.compile(r"【总体评价】.*?总评分.*?(\d+\.\d+)", re.S | re.M)
-        score_mach = score_regex.search(long_text)
-        if score_mach:
-            ai_score = score_mach.group(1)
-            data["ai_score"] = ai_score
-
-        # 核心亮点
-        core_highlight_regex = re.compile(r"【故事Slogan】：(.*)【|【故事Solgan】：(.*)【", re.S | re.M)
-        core_highlight_match = core_highlight_regex.search(long_text)
-        if core_highlight_match:
-            core_highlight = [s for s in core_highlight_match.groups() if s]
-            data["core_highlight"] = core_highlight[0].strip()
-
-        # 核心创意
-        core_idea_regex = re.compile(r"【核心创意】：(.*)$", re.S | re.M)
-        core_idea_match = core_idea_regex.search(long_text)
-        if core_idea_match:
-            core_idea = core_idea_match.group(1).strip()
-            data["core_idea"] = core_idea
+        for item in pattern_list:
+            key, pattern = item["key"], item["pattern"]
+            match = pattern.search(long_text)
+            if match:
+                values = [s.strip() for s in match.groups() if s]
+                data[key] = values[0]
 
         return data
 
@@ -176,19 +160,30 @@ class SyncScriptDelivery:
 
     def save_db(self, ok_results):
         # 把评分最高的数据放进表里
-        ok_results.sort(key=lambda x: float(x["ai_score"]), reverse=True)
+        # ok_results.sort(key=lambda x: float(x["ai_score"]), reverse=True)
 
-        for each_values in ok_results:
-            rid = each_values["rid"]
-            author = each_values["author"]
-            work_name = each_values["work_name"]
-            ai_score = each_values["ai_score"]
-            logging.warning("rid: %s, author: %s, work_name: %s, ai_score：%s", rid, author, work_name, ai_score)
+        step = 2
+        log_msg = "group_name: %s, push_date: %s, rid: %s, author: %s, work_name: %s, ai_score：%s"
 
-            ScriptDelivery.create(**each_values)
+        for group_name, iterator in itertools.groupby(ok_results, key=itemgetter("group_name")):
+            values = list(iterator)
+            group_values = [values[i:i + step] for i in range(0, len(values), step)]
+            push_date = date.today()
+
+            for day, each_values in enumerate(group_values):
+                push_date = push_date + timedelta(days=day)
+                push_date_str = push_date.strftime("%Y-%m-%d")
+
+                for each_item in values:
+                    log_args = (
+                        group_name, push_date_str, each_item["rid"],
+                        each_item["author"], each_item["work_name"], each_item["ai_score"]
+                    )
+                    logger.info(log_msg, *log_args)
+                    ScriptDelivery.create(**each_item)
 
     def parse_records(self):
-        logging.warning('SyncScriptDelivery.parse_records => 【开始】同步數據')
+        logger.info('SyncScriptDelivery.parse_records => 【开始】同步數據')
 
         ok_results = []
         team_data_mapping = self.get_team_run_records_mapping()
@@ -203,30 +198,31 @@ class SyncScriptDelivery:
                 input_data = self.get_values_from_input(input_fields=input_fields)
                 output_data = self.get_values_from_output(output_nodes=output_nodes)
                 values = dict(
-                    rid=run_obj.rid,
+                    rid=run_obj.rid, output="",
                     # output=run_obj.general_details,
-                    output="",
                     group_name=team_name,
                     **input_data, **output_data
                 )
 
+                # 重复的过滤: 只要同作者、作品和所属团队 存在的就不新增
                 filter_kw = dict(group_name=team_name, author=values['author'], work_name=values["work_name"])
-                if self.is_existed(**filter_kw):
-                    logging.warning("以重复的数据: %s", filter_kw)
+                is_existed = ScriptDelivery.query.filter_by(**filter_kw).first()
+                if is_existed:
+                    logger.info("以重复的数据: %s", filter_kw)
                     continue
 
                 if float(values.get('ai_score', '0')) >= self.min_ai_score:
                     ok_results.append(values)
 
         self.save_db(ok_results=ok_results)
-        logging.warning('SyncScriptDelivery.parse_records => 【結束】同步數據')
+        logger.info('SyncScriptDelivery.parse_records => 【結束】同步數據')
 
 
 if __name__ == "__main__":
     from runserver import app
 
     with app.app_context():
-        SyncScriptDelivery(
+        SyncScriptDeliveryRules(
             workflow_id="a0d1492e072a4c05893b692c4d19471e",
             user_id="86ab55af067944c196c2e6bc751b94f8"
         ).parse_records()

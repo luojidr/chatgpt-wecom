@@ -14,7 +14,7 @@ from wecom.apps.worktool.models.script_delivery import ScriptDelivery
 from wecom.utils.log import logger
 from wecom.utils.reply import MessageReply
 from wecom.utils.template import TopAuthorNewWorkTemplate, TopAuthorNewWorkContent
-from scripts.sync_script_delivery import SyncScriptDelivery
+from scripts.sync_script_delivery import SyncScriptDeliveryRules
 
 blueprint = Blueprint("wecom", __name__, url_prefix="/wecom", static_folder="../static")
 
@@ -46,7 +46,7 @@ def download(filename):
     return send_from_directory(static_path, filename, as_attachment=True)
 
 
-@blueprint.route("/push")
+@blueprint.route("/push", methods=["POST"])
 def push():
     is_online = MessageReply().get_rebot_status()
     if not is_online:
@@ -81,7 +81,7 @@ def push():
 
 @blueprint.route('/sync_script_delivery', methods=['POST'])
 def sync_script_delivery():
-    SyncScriptDelivery().parse_records()
+    SyncScriptDeliveryRules().parse_records()
     return jsonify(msg="sync_script_delivery is ok", status=200, data=None)
 
 
