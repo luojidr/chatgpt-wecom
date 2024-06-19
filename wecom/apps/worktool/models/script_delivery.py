@@ -88,8 +88,9 @@ class ScriptDelivery(BaseModel):
         push_date = date.today().strftime("%Y-%m-%d")
         queryset = cls.query.filter_by(push_date=push_date, is_pushed=False, is_delete=False).all()
 
-        for group_name, objects in groupby(queryset, key=attrgetter("group_name")):
-            results.setdefault(group_name, []).extend(objects)
+        # for group_name, objects in groupby(queryset, key=attrgetter("group_name")):
+        for obj in queryset:
+            results.setdefault(obj.group_name, []).append(obj)
 
         return results
 
