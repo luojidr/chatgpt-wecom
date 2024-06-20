@@ -89,6 +89,7 @@ class ChatCompletion:
 
     def stream_generator(self):
         logger.info("stream_generator => XXXXX: [%s]", self.session_id)
+        logger.info("stream_generator => YYYYYYYY: \n%s", json.dumps(self.sessions))
         response = self.client.chat.completions.create(
             model=self.model,
             messages=self.sessions[self.session_id],
