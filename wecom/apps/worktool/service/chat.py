@@ -31,7 +31,7 @@ class ChatCompletion:
         logger.info("_add_messages => AAAAAAA: [%s]", self.session_id)
         logger.info("_add_messages => BBBBBBB: %s", session_messages)
 
-        if session_messages:
+        if not session_messages:
             messages.append(dict(role="system", content=os.environ["DEFAULT_SYSTEM_PROMPT"]))
 
         session_messages.extend(messages)
