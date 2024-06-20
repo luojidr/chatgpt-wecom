@@ -192,9 +192,9 @@ def chat_completions():
     """ chatgpt-next-web 项目 """
     data = request.json
     messages = data["messages"]
-    logger.info("chat_completions => messages: %s", )
-
     rid = data.get("runId", "")
+    logger.info("chat_completions => rid: %s, messages: %s", rid, messages)
+
     chat_kwargs = dict(session_id=rid, messages=messages)
     return Response(
         stream_with_context(chat.ChatCompletion(**chat_kwargs).stream_generator()),
