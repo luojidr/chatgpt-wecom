@@ -182,18 +182,21 @@ def ai_evaluation_detail():
     context = {
         "input_list": input_list,
         "output_list": output_list,
-        "chat_url": f"http://47.243.180.140:3000/#/chat?runId={script_delivery_obj.rid}",
+        "chat_url": f"{os.environ['CHAT_BASE_URL']}?runId={script_delivery_obj.rid}",
     }
     return render_template("wecom/evaluation_detail.html", **context)
 
 
 @blueprint.route("/v1/chat/completions", methods=['POST'])
 def chat_completions():
+    """ chatgpt-next-web 项目 """
     data = request.json
-    logger.info("chat_completions => messages: %s", data["messages"])
+    messages = data["messages"]
+    logger.info("chat_completions => messages: %s", )
 
     rid = data.get("runId", "")
+    chat_kwargs = dict(session_id=rid, messages=messages)
     return Response(
-        stream_with_context(chat.ChatCompletion(session_id=rid).stream_generator()),
+        stream_with_context(chat.ChatCompletion(**chat_kwargs).stream_generator()),
         content_type='text/event-stream'
     )

@@ -1,5 +1,6 @@
 import json
 import os.path
+from typing import List, Dict
 
 from openai import OpenAI
 
@@ -12,7 +13,7 @@ from wecom.bot.chatgpt_session import num_tokens_from_messages
 class ChatCompletion:
     SESSIONS = ExpiredDict(settings.SESSION_EXPIRES_IN_SECONDS)
 
-    def __init__(self, session_id, query):
+    def __init__(self, session_id, messages):
         self.session_id = session_id
         self.sessions = self.SESSIONS
 
@@ -23,30 +24,18 @@ class ChatCompletion:
             base_url=os.environ["OPENAI_API_BASE"],
         )
 
-        self._add_query(query)
+        self._add_messages(messages)
 
-    def _add_query(self, query):
+    def _add_messages(self, messages: List[Dict[str, str]]):
         if self.session_id not in self.sessions:
             self.sessions[self.session_id] = [dict(role="system", content=os.environ["DEFAULT_SYSTEM_PROMPT"])]
 
-        user_item = {"role": "user", "content": query}
-        self.sessions[self.session_id].append(user_item)
-
+        self.sessions[self.session_id].extend(messages)
         try:
             total_tokens = self._discard_threshold(self.max_tokens, None)
             logger.info("ChatCompletion => prompt tokens used=%s", total_tokens)
         except Exception as e:
             logger.error("ChatCompletion => error when counting tokens precisely for prompt:%s}", e)
-
-    def _add_reply(self, reply, total_tokens=None):
-        assistant_item = {"role": "assistant", "content": reply}
-        self.sessions[self.session_id].append(assistant_item)
-
-        try:
-            tokens_cnt = self._discard_threshold(self.max_tokens, total_tokens)
-            logger.debug("ChatCompletion => raw total_tokens=%s, save session tokens=%s", total_tokens, tokens_cnt)
-        except Exception as e:
-            logger.warning("ChatCompletion => Exception when counting tokens precisely for session: %s", e)
 
     def _clear_session(self):
         self.sessions[self.session_id].clear()
@@ -105,6 +94,5 @@ class ChatCompletion:
             stream=True
         )
         for chunk in response:
-            logger.info("stream chunk: %s", chunk.dict())
             sse_message = f"data: {json.dumps(chunk.dict())}\n\n"
             yield sse_message
