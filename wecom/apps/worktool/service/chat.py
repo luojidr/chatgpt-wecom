@@ -27,12 +27,12 @@ class ChatCompletion:
         self._add_messages(messages)
 
     def _add_messages(self, messages: List[Dict[str, str]]):
-        messages = self.sessions.setdefault(self.session_id, [])
-        if self.session_id not in self.sessions:
+        session_messages = self.sessions.setdefault(self.session_id, [])
+        if session_messages:
             messages.append(dict(role="system", content=os.environ["DEFAULT_SYSTEM_PROMPT"]))
 
-        messages.extend(messages)
-        logger.info("ChatCompletion => session_id: %s, messages: %s", self.session_id, messages)
+        session_messages.extend(messages)
+        logger.info("ChatCompletion => session_id: %s, messages: %s", self.session_id, session_messages)
 
         try:
             total_tokens = self._discard_threshold(self.max_tokens, None)
