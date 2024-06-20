@@ -28,6 +28,9 @@ class ChatCompletion:
 
     def _add_messages(self, messages: List[Dict[str, str]]):
         session_messages = self.sessions.setdefault(self.session_id, [])
+        logger.info("_add_messages => AAAAAAA: [%s]", self.session_id)
+        logger.info("_add_messages => BBBBBBB: %s", session_messages)
+
         if session_messages:
             messages.append(dict(role="system", content=os.environ["DEFAULT_SYSTEM_PROMPT"]))
 
@@ -85,6 +88,7 @@ class ChatCompletion:
         return num_tokens_from_messages(messages, self.model)
 
     def stream_generator(self):
+        logger.info("stream_generator => XXXXX: [%s]", self.session_id)
         response = self.client.chat.completions.create(
             model=self.model,
             messages=self.sessions[self.session_id],
