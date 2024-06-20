@@ -83,6 +83,10 @@ class ScriptDelivery(BaseModel):
         return instance
 
     @classmethod
+    def get_object(cls, **kwargs):
+        return cls.query.filter_by(**kwargs).first()
+
+    @classmethod
     def get_required_script_delivery_list(cls):
         results = {}
         push_date = date.today().strftime("%Y-%m-%d")

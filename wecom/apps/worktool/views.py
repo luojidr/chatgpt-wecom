@@ -6,6 +6,7 @@ import os.path
 from flask import render_template
 from flask import send_from_directory
 from flask import Blueprint, request, jsonify
+from flask import Response, stream_with_context
 # from flask_security import login_required
 
 from config import settings
@@ -15,6 +16,7 @@ from wecom.utils.log import logger
 from wecom.utils.reply import MessageReply
 from wecom.utils.template import TopAuthorNewWorkTemplate, TopAuthorNewWorkContent
 from scripts.sync_script_delivery import SyncScriptDeliveryRules
+from wecom.apps.worktool.service import chat
 
 blueprint = Blueprint("wecom", __name__, url_prefix="/wecom", static_folder="../static")
 
@@ -122,7 +124,10 @@ def callback_wecom():
 
 @blueprint.route('/evaluation', methods=['GET'])
 def ai_evaluation_detail():
-    def get_pattern(regex, string, pos="first"):
+    def get_node_data(output_node, regex, pos="first"):
+        name = output_node["data"]["template"]["output_title"]["value"]
+        string = output_node["data"]["template"]["text"]["value"]
+
         iter_list = list(regex.finditer(string))
         data_list = []
 
@@ -144,12 +149,14 @@ def ai_evaluation_detail():
             elif pos == "tail":
                 data_list.append(dict(vals=[itor.group(0) + s for s in vals]))
 
-        return data_list
+        return dict(name=name, vals=data_list)
 
     params = request.args
-    output_str = ScriptDelivery.get_output_by_uniq_id(uniq_id=params.get("tid"))
+    tid = params.get("tid")
+    script_delivery_obj = ScriptDelivery.get_object(uniq_id=tid)
+    output_str = ScriptDelivery.get_output_by_uniq_id(uniq_id=tid)
 
-    if not output_str:
+    if not script_delivery_obj or not output_str:
         return "<html>404</html>"
 
     input_list = []
@@ -167,21 +174,26 @@ def ai_evaluation_detail():
     regex2 = re.compile(r"\d\.", re.M | re.S)
 
     output_list = [
-        dict(
-            name=output_nodes[0]["data"]["template"]["output_title"]["value"],
-            vals=get_pattern(regex1, output_nodes[0]["data"]["template"]["text"]["value"]),
-        ),
-
-        dict(
-            name=output_nodes[1]["data"]["template"]["output_title"]["value"],
-            vals=get_pattern(regex2, output_nodes[1]["data"]["template"]["text"]["value"], pos="mid"),
-        ),
-
-        dict(
-            name=output_nodes[2]["data"]["template"]["output_title"]["value"],
-            vals=get_pattern(regex1, output_nodes[2]["data"]["template"]["text"]["value"], pos="tail"),
-        ),
+        get_node_data(output_nodes[0], regex1),
+        get_node_data(output_nodes[1], regex2, pos="mid"),
+        get_node_data(output_nodes[3], regex1, pos="tail"),
     ]
 
-    context = {"input_list": input_list, "output_list": output_list}
+    context = {
+        "input_list": input_list,
+        "output_list": output_list,
+        "chat_url": f"http://47.243.180.140:3000/#/chat?runId={script_delivery_obj.rid}",
+    }
     return render_template("wecom/evaluation_detail.html", **context)
+
+
+@blueprint.route("/v1/chat/completions", methods=['POST'])
+def chat_completions():
+    data = request.json
+    logger.info("chat_completions => messages: %s", data["messages"])
+
+    rid = data.get("runId", "")
+    return Response(
+        stream_with_context(chat.ChatCompletion(session_id=rid).stream_generator()),
+        content_type='text/event-stream'
+    )

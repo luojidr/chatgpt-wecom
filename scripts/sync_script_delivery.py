@@ -2,7 +2,7 @@ import json
 import re
 import os.path
 import itertools
-from operator import itemgetter
+from operator import itemgetter, attrgetter
 from datetime import timedelta
 from urllib.parse import urlparse, parse_qs
 
@@ -159,10 +159,8 @@ class SyncScriptDeliveryRules:
         return queryset
 
     def save_db(self, ok_results):
-        # 把评分最高的数据放进表里
-        # ok_results.sort(key=lambda x: float(x["ai_score"]), reverse=True)
-
         step = 2
+        ok_results.sort(key=attrgetter("group_name"))  # 按组名分组排序
         log_msg = "==>> group_name: %s, push_date: %s, rid: %s, author: %s, work_name: %s, ai_score：%s"
 
         for group_name, iterator in itertools.groupby(ok_results, key=itemgetter("group_name")):
@@ -171,9 +169,14 @@ class SyncScriptDeliveryRules:
             author_books_set = set()
 
             for item in list(iterator):
-                key = item["author"] + "|" + item["work_name"]
-                if key not in author_books_set:
-                    author_books_set.add(key)
+                src_url = item.get("src_url")
+                author = item.get("author") or ""
+                work_name = item.get("work_name") or ""
+                uniq_key = author + "|" + work_name
+
+                # 出处链接、作者、作品名必须要存在
+                if author and work_name and src_url and uniq_key not in author_books_set:
+                    author_books_set.add(uniq_key)
                     values.append(item)
 
             # 计算 push_date

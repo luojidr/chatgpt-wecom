@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Button</title>
+    <style>
+        body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #f0f0f0;
+    margin: 0;
+}
+
+.chat-btn {
+    background-color: #007bff;
+    color: #fff;
+    padding: 15px 30px;
+    border-radius: 25px;
+    text-align: center;
+    font-size: 18px;
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: background-color 0.3s ease, transform 0.3s ease;
+}
+
+.chat-btn:hover {
+    background-color: #0056b3;
+    transform: translateY(-2px);
+}
+
+.chat-popup {
+    display: none; /* 初始化状态为隐藏 */
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 300px;
+    height: 400px;
+    background-color: #fff;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+    overflow: hidden;
+    z-index: 1000;
+}
+
+.chat-popup iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+
+.close-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 20px;
+    cursor: pointer;
+    color: #999;
+}
+
+.close-btn:hover {
+    color: #555;
+}
+
+    </style>
+</head>
+<body>
+    <div class="chat-btn">
+        <button id="chatBtn">开始聊天</button>
+    </div>
+    <div class="chat-popup" id="chatPopup">
+        <iframe src="https://third-party-chat-service.com" frameborder="0"></iframe>
+        <span class="close-btn" id="closeBtn">&times;</span>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('chatBtn').addEventListener('click', function() {
+        document.getElementById('chatPopup').style.display = 'block';
+    });
+
+    document.getElementById('closeBtn').addEventListener('click', function() {
+        document.getElementById('chatPopup').style.display = 'none';
+    });
+});
+
+    </script>
+</body>
+</html>

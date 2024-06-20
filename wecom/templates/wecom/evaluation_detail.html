@@ -68,23 +68,61 @@
             box-sizing: border-box;
             font-size: 14px;
         }
-        .submit-btn {
-            width: 100%;
-            text-align: center;
-            margin-top: 20px;
-        }
-        .submit-btn button {
-            padding: 12px 30px;
+        .chat-btn button {
+            padding: 12px 26px;
             border: none;
-            border-radius: 4px;
-            background-color: #4caf50;
+            border-radius: 15px;
+            text-align: center;
+            background-color: #007bff;
             color: #fff;
-            font-size: 14px;
+            font-size: 16px;
             cursor: pointer;
-            transition: background-color 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.3s ease, transform 0.3s ease;
         }
-        .submit-btn button:hover {
-            background-color: #45a049;
+        .chat-btn button:hover {
+            background-color: #0056b3;
+            transform: translateY(-2px);
+        }
+        .chat-popup {
+            display: none;
+            position: fixed;
+            top: 2%;
+            left: 0;
+            {#bottom: 20px;#}
+            {#right: 20px;#}
+            width: 70%;
+            height: 80%;
+            background-color: #fff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            overflow: hidden;
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .chat-popup iframe {
+            {#display: block;#}
+            width: 97%;
+            height: 100%;
+            border: none;
+            {#border-radius: 10px;#}
+            {#background-color: #fff;#}
+            {#box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);#}
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 20px;
+            cursor: pointer;
+            color: #999;
+        }
+
+        .close-btn:hover {
+            color: #555;
         }
 
         .intro-text {
@@ -148,8 +186,14 @@
                             <input type="text" id="novel-{{ loop.index0 }}" name="novel-{{ loop.index0 }}"  value="{{ input_item.text }}">
                         </div>
                     {% endfor %}
-{#                    <div class="submit-btn">#}
-{#                    </div>#}
+
+                    <div class="chat-btn">
+                        <button type="button" id="chatBtn">开始聊天</button>
+                    </div>
+                    <div class="chat-popup" id="chatPopup"  style="display: none">
+                        <iframe src="{{ chat_url }}" frameborder="0"></iframe>
+                        <span class="close-btn" id="closeBtn">&times;</span>
+                    </div>
                 </form>
             </div>
 
@@ -173,5 +217,17 @@
             </div>
         </div>
     </div>
+
+    <script>
+        document.getElementById('chatBtn').addEventListener('click', function() {
+            document.getElementById('chatPopup').style.display = 'block';
+            {#document.querySelector('.chat-popup iframe').style.display = 'block';#}
+        });
+
+        document.getElementById('closeBtn').addEventListener('click', function() {
+            document.getElementById('chatPopup').style.display = 'none';
+            {#document.querySelector('.chat-popup iframe').style.display = 'none';#}
+        });
+    </script>
 </body>
 </html>
