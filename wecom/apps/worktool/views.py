@@ -193,7 +193,6 @@ def chat_completions():
     data = request.json
     messages = data["messages"]
     rid = data.get("runId", "")
-    logger.info("chat_completions => rid: %s, messages: %s", rid, messages)
 
     chat_kwargs = dict(session_id=rid, messages=messages)
     return Response(
