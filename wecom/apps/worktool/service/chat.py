@@ -4,14 +4,15 @@ from typing import List, Dict
 
 from openai import OpenAI
 
-from config import settings
+from config import settings, prompts
 from wecom.utils.log import logger
 from wecom.core.expired_dict import ExpiredDict
 from wecom.bot.chatgpt_session import num_tokens_from_messages
+from wecom.apps.worktool.models.script_delivery import ScriptDelivery
 
 
 class ChatCompletion:
-    SESSIONS = ExpiredDict(settings.SESSION_EXPIRES_IN_SECONDS)
+    SESSIONS = ExpiredDict(settings.SESSION_EXPIRES_IN_SECONDS * 6)
 
     def __init__(self, session_id, messages):
         self.session_id = session_id
@@ -24,31 +25,48 @@ class ChatCompletion:
             base_url=os.environ["OPENAI_API_BASE"],
         )
 
+        self._tmp_messages = []
         self._add_messages(messages)
 
     def _add_messages(self, messages: List[Dict[str, str]]):
-        session_messages = self.sessions.setdefault(self.session_id, [])
-        logger.info("_add_messages => AAAAAAA: [%s]", self.session_id)
-        logger.info("_add_messages => BBBBBBB: %s", session_messages)
+        if not self.sessions.get(self.session_id):
+            self.sessions[self.session_id] = [
+                dict(role="system", content=os.environ["DEFAULT_SYSTEM_PROMPT"]),
+                dict(role="system", content=prompts.DEFAULT_USER_PROMPT),
+            ]
+            output = ScriptDelivery.get_output_by_workflow_rid(self.session_id)
 
-        if not session_messages:
-            messages.append(dict(role="system", content=os.environ["DEFAULT_SYSTEM_PROMPT"]))
+            if output:
+                output_data = json.loads(output)
 
-        session_messages.extend(messages)
-        logger.info("ChatCompletion => session_id: %s, messages: %s", self.session_id, session_messages)
+                # user
+                input_fields = output_data["ui_design"]["inputFields"]
+                input_list = ["%s: %s" % (input_item["name"], input_item["value"]) for input_item in input_fields]
+                self.sessions[self.session_id].append(dict(role="user", content=", ".join(input_list)))
 
+                # assistant
+                output_nodes = output_data["ui_design"]["outputNodes"][:3]
+                output_list = [output_node["data"]["template"]["text"]["value"] for output_node in output_nodes]
+                self.sessions[self.session_id].append(dict(role="user", content="\n".join(output_list)))
+
+            if len(self.sessions[self.session_id]) != 4:
+                raise ValueError("未发现rid: %s 的AI评估分析", self.session_id)
+
+        if messages and messages[0]["content"] == "起飞":
+            messages.pop(0)
+
+        self._tmp_messages.extend(self.sessions[self.session_id])
+        self._tmp_messages.extend(messages)
+        logger.info("ChatCompletion => session_id: %s, messages: %s", self.session_id, self._tmp_messages)
         try:
             total_tokens = self._discard_threshold(self.max_tokens, None)
             logger.info("ChatCompletion => prompt tokens used=%s", total_tokens)
         except Exception as e:
             logger.error("ChatCompletion => error when counting tokens precisely for prompt:%s}", e)
 
-    def _clear_session(self):
-        self.sessions[self.session_id].clear()
-
     def _discard_threshold(self, max_tokens, cur_tokens=None):
         precise = True
-        messages = self.sessions[self.session_id]
+        messages = self._tmp_messages
 
         try:
             cur_tokens = self._calc_tokens()
@@ -84,12 +102,10 @@ class ChatCompletion:
         return cur_tokens
 
     def _calc_tokens(self):
-        messages = self.sessions[self.session_id]
+        messages = self._tmp_messages
         return num_tokens_from_messages(messages, self.model)
 
     def stream_generator(self):
-        logger.info("stream_generator => XXXXX: [%s]", self.session_id)
-        logger.info("stream_generator => YYYYYYYY: \n%s", json.dumps(self.sessions))
         response = self.client.chat.completions.create(
             model=self.model,
             messages=self.sessions[self.session_id],

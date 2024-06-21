@@ -176,7 +176,7 @@ def ai_evaluation_detail():
     output_list = [
         get_node_data(output_nodes[0], regex1),
         get_node_data(output_nodes[1], regex2, pos="mid"),
-        get_node_data(output_nodes[3], regex1, pos="tail"),
+        get_node_data(output_nodes[2], regex1, pos="tail"),
     ]
 
     context = {
