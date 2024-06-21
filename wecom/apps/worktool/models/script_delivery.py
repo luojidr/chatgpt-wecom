@@ -109,6 +109,16 @@ class ScriptDelivery(BaseModel):
             return run_obj and run_obj.general_details
 
     @classmethod
+    def get_output_by_workflow_rid(cls, rid):
+        obj = WorkflowRunRecord.query\
+            .options(load_only(WorkflowRunRecord.general_details))\
+            .filter_by(rid=rid)\
+            .first()
+
+        if obj:
+            return obj.general_details
+
+    @classmethod
     def get_latest_push_date_by_group_name(cls, group_name):
         objs = cls.query\
             .options(load_only(cls.push_date))\
