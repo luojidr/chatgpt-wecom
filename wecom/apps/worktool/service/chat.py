@@ -37,7 +37,7 @@ class ChatCompletion:
 
             self.sessions[self.session_id] = [
                 dict(role="system", content=prompts.DEFAULT_SYSTEM_PROMPT),
-                dict(role="user", content=prompts.DEFAULT_USER_PROMPT.format(author, work_name)),
+                dict(role="user", content=prompts.DEFAULT_USER_PROMPT.format(author=author, work_name=work_name)),
             ]
 
             if output:
