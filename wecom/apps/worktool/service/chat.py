@@ -40,31 +40,33 @@ class ChatCompletion:
             input_list = ["%s: %s" % (input_item["name"], input_item["value"]) for input_item in input_fields]
             # user_item = dict(role="user", content=", ".join(input_list))
             # self.sessions[self.session_id].append(user_item)
-            text += "\n".join(input_list)
+            text += "===小说作者、作品与题材===\n".join(input_list) + "\n"
 
             # assistant
             output_nodes = output_data["ui_design"]["outputNodes"][:3]
             output_list = [output_node["data"]["template"]["text"]["value"] for output_node in output_nodes]
             # assistant_item = dict(role="assistant", content="\n".join(output_list))
             # self.sessions[self.session_id].append(assistant_item)
-            text += "\n".join(output_list)
+            text += "===评估与分析===\n".join(output_list)
 
         return text
 
     def _add_messages(self, messages: List[Dict[str, str]]):
         if not self.sessions.get(self.session_id):
-            self.sessions[self.session_id] = [dict(role="system", content=prompts.DEFAULT_CHAT_PROMPT)]
+            text = self._get_content()
+            prompt = prompts.DEFAULT_SYSTEM_PROMPT + "\n请根据下面这篇小说的评估与分析结果，回答用户的任何问题！\n" + text
+            self.sessions[self.session_id] = [dict(role="system", content=prompt)]
 
         first_query = self._get_content()
         if messages[0]["content"] == "起飞":
-            query = first_query
-        else:
-            query = first_query + "回答：" + messages[0]["content"]
-        messages[0] = dict(role="user", content=query)
+            messages[0]["content"] = "总结小说评估与分析中主旨"
+        # else:
+        #     query = first_query + "回答：" + messages[0]["content"]
+        # messages[0] = dict(role="user", content=query)
 
         self._tmp_messages.extend(self.sessions[self.session_id])
         self._tmp_messages.extend(messages)
-        logger.info("ChatCompletion => session_id: %s, messages: %s", self.session_id, self._tmp_messages)
+        logger.info("ChatCompletion => session_id: %s, messages: %s", self.session_id, json.dumps(self._tmp_messages, indent=4))
         try:
             total_tokens = self._discard_threshold(self.max_tokens, None)
             logger.info("ChatCompletion => prompt tokens used=%s", total_tokens)
