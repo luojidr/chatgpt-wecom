@@ -114,7 +114,7 @@ class ChatCompletion:
     def stream_generator(self):
         response = self.client.chat.completions.create(
             model=self.model,
-            messages=self.sessions[self.session_id],
+            messages=self._tmp_messages,
             temperature=0.9,
             max_tokens=4096,
             top_p=0.95,
