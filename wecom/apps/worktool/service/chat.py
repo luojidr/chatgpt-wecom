@@ -30,34 +30,31 @@ class ChatCompletion:
 
     def _add_messages(self, messages: List[Dict[str, str]]):
         if not self.sessions.get(self.session_id):
+            self.sessions[self.session_id] = [dict(role="system", content=prompts.DEFAULT_SYSTEM_PROMPT)]
+
             output = ScriptDelivery.get_output_by_workflow_rid(self.session_id)
-            script_delivery_obj = ScriptDelivery.get_object(rid=self.session_id)
-            author = script_delivery_obj.author or ""
-            work_name = script_delivery_obj.work_name or ""
-
-            self.sessions[self.session_id] = [
-                dict(role="system", content=prompts.DEFAULT_SYSTEM_PROMPT),
-                dict(role="user", content=prompts.DEFAULT_USER_PROMPT.format(author=author, work_name=work_name)),
-            ]
-
             if output:
                 output_data = json.loads(output)
+                dict(role="user", content=prompts.DEFAULT_USER_PROMPT.format(author=author, work_name=work_name)),
 
                 # user
                 input_fields = output_data["ui_design"]["inputFields"]
                 input_list = ["%s: %s" % (input_item["name"], input_item["value"]) for input_item in input_fields]
-                self.sessions[self.session_id].append(dict(role="system", content=", ".join(input_list)))
+                user_item = dict(role="user", content=prompts.DEFAULT_USER_PROMPT + ", ".join(input_list))
+                self.sessions[self.session_id].append(user_item)
 
                 # assistant
                 output_nodes = output_data["ui_design"]["outputNodes"][:3]
                 output_list = [output_node["data"]["template"]["text"]["value"] for output_node in output_nodes]
-                self.sessions[self.session_id].append(dict(role="user", content="\n".join(output_list)))
+                assistant_item = dict(role="assistant", content="\n".join(output_list))
+                self.sessions[self.session_id].append(assistant_item)
 
             if len(self.sessions[self.session_id]) != 4:
                 raise ValueError("未发现rid: %s 的AI评估分析", self.session_id)
 
         if messages and messages[0]["content"] == "起飞":
             messages.pop(0)
+            messages.insert(0, dict(role="user", content="根据上面评估与分析，给出基于【总体评价】的专业性和极具建设性的分析。"))
 
         self._tmp_messages.extend(self.sessions[self.session_id])
         self._tmp_messages.extend(messages)
