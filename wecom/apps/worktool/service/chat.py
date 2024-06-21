@@ -55,9 +55,12 @@ class ChatCompletion:
         if not self.sessions.get(self.session_id):
             self.sessions[self.session_id] = [dict(role="system", content=prompts.DEFAULT_SYSTEM_PROMPT)]
 
+        first_query = self._get_content()
         if messages[0]["content"] == "起飞":
-            pass
-        messages[0] = dict(role="user", content=self._get_content() + "\n" + messages[0]["content"])
+            query = first_query
+        else:
+            query = first_query + "回答：" + messages[0]["content"]
+        messages[0] = dict(role="user", content=query)
 
         self._tmp_messages.extend(self.sessions[self.session_id])
         self._tmp_messages.extend(messages)
