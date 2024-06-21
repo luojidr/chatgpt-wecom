@@ -160,7 +160,7 @@ class SyncScriptDeliveryRules:
 
     def save_db(self, ok_results):
         step = 2
-        ok_results.sort(key=attrgetter("group_name"))  # 按组名分组排序
+        ok_results.sort(key=itemgetter("group_name"))  # 按组名分组排序
         log_msg = "==>> group_name: %s, push_date: %s, rid: %s, author: %s, work_name: %s, ai_score：%s"
 
         for group_name, iterator in itertools.groupby(ok_results, key=itemgetter("group_name")):
