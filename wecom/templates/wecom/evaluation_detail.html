@@ -188,7 +188,7 @@
                     {% endfor %}
 
                     <div class="chat-btn">
-                        <button type="button" id="chatBtn">开始聊天</button>
+                        <button type="button" id="chatBtn" style="display: none">开始聊天</button>
                     </div>
                     <div class="chat-popup" id="chatPopup"  style="display: none">
                         <iframe src="{{ chat_url }}" frameborder="0"></iframe>
@@ -219,15 +219,18 @@
     </div>
 
     <script>
-        document.getElementById('chatBtn').addEventListener('click', function() {
-            document.getElementById('chatPopup').style.display = 'block';
-            {#document.querySelector('.chat-popup iframe').style.display = 'block';#}
-        });
+        window.onload = function (){
+            document.getElementById('chatBtn').style.display = 'block';
 
-        document.getElementById('closeBtn').addEventListener('click', function() {
-            document.getElementById('chatPopup').style.display = 'none';
-            {#document.querySelector('.chat-popup iframe').style.display = 'none';#}
-        });
+            document.getElementById('chatBtn').addEventListener('click', function() {
+                document.getElementById('chatPopup').style.display = 'block';
+            });
+
+            document.getElementById('closeBtn').addEventListener('click', function() {
+                document.getElementById('chatPopup').style.display = 'none';
+            });
+        }
+
     </script>
 </body>
 </html>
