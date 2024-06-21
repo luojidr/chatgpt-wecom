@@ -35,7 +35,6 @@ class ChatCompletion:
             output = ScriptDelivery.get_output_by_workflow_rid(self.session_id)
             if output:
                 output_data = json.loads(output)
-                dict(role="user", content=prompts.DEFAULT_USER_PROMPT.format(author=author, work_name=work_name)),
 
                 # user
                 input_fields = output_data["ui_design"]["inputFields"]
