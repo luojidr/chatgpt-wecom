@@ -60,13 +60,10 @@ class ChatCompletion:
         first_query = self._get_content()
         if messages[0]["content"] == "起飞":
             messages[0]["content"] = "总结小说评估与分析中主旨"
-        # else:
-        #     query = first_query + "回答：" + messages[0]["content"]
-        # messages[0] = dict(role="user", content=query)
 
         self._tmp_messages.extend(self.sessions[self.session_id])
         self._tmp_messages.extend(messages)
-        logger.info("ChatCompletion => session_id: %s, messages: %s", self.session_id, json.dumps(self._tmp_messages, indent=4))
+        # logger.info("ChatCompletion => session_id: %s, messages: %s", self.session_id, json.dumps(self._tmp_messages, indent=4, ensure_ascii=False))
         try:
             total_tokens = self._discard_threshold(self.max_tokens, None)
             logger.info("ChatCompletion => prompt tokens used=%s", total_tokens)
