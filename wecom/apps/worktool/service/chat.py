@@ -53,7 +53,7 @@ class ChatCompletion:
 
         if messages and messages[0]["content"] == "起飞":
             messages.pop(0)
-            messages.insert(0, dict(role="user", content="根据上面评估与分析，给出基于【总体评价】的专业性和极具建设性的分析。"))
+            messages.insert(0, dict(role="user", content="根据上面你的分析答案，给出答案中【总体评价】的专业性分析的依据。"))
 
         self._tmp_messages.extend(self.sessions[self.session_id])
         self._tmp_messages.extend(messages)
