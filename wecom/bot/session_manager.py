@@ -1,6 +1,6 @@
 from wecom.utils.log import logger
 from ..core.expired_dict import ExpiredDict
-from config import settings
+from config import settings, prompts
 
 
 class Session:
@@ -106,7 +106,7 @@ class GroupSessionManager:
 
     def _get_session(self, group_name, system_prompt=None):
         if system_prompt is None:
-            system_prompt = settings.WT_GROUP_NAMES[group_name]
+            system_prompt = prompts.WT_GROUP_PROMPTS[group_name]
 
         if group_name not in self.g_sessions:
             self.g_sessions[group_name] = SessionManager(

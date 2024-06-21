@@ -30,11 +30,15 @@ class ChatCompletion:
 
     def _add_messages(self, messages: List[Dict[str, str]]):
         if not self.sessions.get(self.session_id):
-            self.sessions[self.session_id] = [
-                dict(role="system", content=os.environ["DEFAULT_SYSTEM_PROMPT"]),
-                dict(role="system", content=prompts.DEFAULT_USER_PROMPT),
-            ]
             output = ScriptDelivery.get_output_by_workflow_rid(self.session_id)
+            script_delivery_obj = ScriptDelivery.get_object(rid=self.session_id)
+            author = script_delivery_obj.author or ""
+            work_name = script_delivery_obj.work_name or ""
+
+            self.sessions[self.session_id] = [
+                dict(role="system", content=prompts.DEFAULT_SYSTEM_PROMPT),
+                dict(role="user", content=prompts.DEFAULT_USER_PROMPT.format(author, work_name)),
+            ]
 
             if output:
                 output_data = json.loads(output)
@@ -42,7 +46,7 @@ class ChatCompletion:
                 # user
                 input_fields = output_data["ui_design"]["inputFields"]
                 input_list = ["%s: %s" % (input_item["name"], input_item["value"]) for input_item in input_fields]
-                self.sessions[self.session_id].append(dict(role="user", content=", ".join(input_list)))
+                self.sessions[self.session_id].append(dict(role="system", content=", ".join(input_list)))
 
                 # assistant
                 output_nodes = output_data["ui_design"]["outputNodes"][:3]
