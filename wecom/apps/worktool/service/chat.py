@@ -48,7 +48,7 @@ class ChatCompletion:
                 assistant_item = dict(role="assistant", content="\n".join(output_list))
                 self.sessions[self.session_id].append(assistant_item)
 
-            if len(self.sessions[self.session_id]) != 4:
+            if len(self.sessions[self.session_id]) != 3:
                 raise ValueError("未发现rid: %s 的AI评估分析", self.session_id)
 
         if messages and messages[0]["content"] == "起飞":
