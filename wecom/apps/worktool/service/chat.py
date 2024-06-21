@@ -39,7 +39,7 @@ class ChatCompletion:
                 # user
                 input_fields = output_data["ui_design"]["inputFields"]
                 input_list = ["%s: %s" % (input_item["name"], input_item["value"]) for input_item in input_fields]
-                user_item = dict(role="user", content=", ".join(input_list) + "\n对这篇小说进行专业的评估与分析")
+                user_item = dict(role="user", content=", ".join(input_list))
                 self.sessions[self.session_id].append(user_item)
 
                 # assistant
@@ -51,10 +51,10 @@ class ChatCompletion:
             if len(self.sessions[self.session_id]) != 3:
                 raise ValueError("未发现rid: %s 的AI评估分析", self.session_id)
 
-        logger.info("ChatCompletion => session_id: %s, raw messages[0]: %s", self.session_id, messages[0])
-        if messages[0]["content"] == "起飞":
-            messages.pop(0)
-            messages.insert(0, dict(role="user", content="用简短、简练的文字概括故事主旨"))
+        # logger.info("ChatCompletion => session_id: %s, raw messages[0]: %s", self.session_id, messages[0])
+        # if messages[0]["content"] == "起飞":
+        #     messages.pop(0)
+        #     messages.insert(0, dict(role="user", content="用简短、简练的文字概括故事主旨"))
 
         self._tmp_messages.extend(self.sessions[self.session_id])
         self._tmp_messages.extend(messages)
