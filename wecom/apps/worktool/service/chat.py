@@ -59,10 +59,9 @@ class ChatCompletion:
         if messages[0]["content"] == "起飞":
             messages.pop(0)
             query = "===输出=== \n用简短、简练的文字概括这部小说的故事主旨"
-            # messages.insert(0, dict(role="user", content="用简短、简练的文字概括这部小说的故事主旨"))
         else:
             query = messages[0]["content"]
-        messages[0] = dict(role="user", content=self._get_content() + query)
+        messages.insert(0, dict(role="user", content=self._get_content() + query))
 
         self._tmp_messages.extend(self.sessions[self.session_id])
         self._tmp_messages.extend(messages)
