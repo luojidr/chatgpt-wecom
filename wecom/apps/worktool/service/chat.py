@@ -28,40 +28,33 @@ class ChatCompletion:
         self._tmp_messages = []
         self._add_messages(messages)
 
-    def _get_content(self):
-        text = ""
-        output = ScriptDelivery.get_output_by_workflow_rid(self.session_id)
-
-        if output:
-            output_data = json.loads(output)
-
-            # user
-            input_fields = output_data["ui_design"]["inputFields"]
-            input_list = ["%s: %s" % (input_item["name"], input_item["value"]) for input_item in input_fields]
-            # user_item = dict(role="user", content=", ".join(input_list))
-            # self.sessions[self.session_id].append(user_item)
-            text += ", ".join(input_list) + "\n"
-
-            # assistant
-            output_nodes = output_data["ui_design"]["outputNodes"][:3]
-            output_list = [output_node["data"]["template"]["text"]["value"] for output_node in output_nodes]
-            # assistant_item = dict(role="assistant", content="\n".join(output_list))
-            # self.sessions[self.session_id].append(assistant_item)
-            text += "\n".join(output_list) + "\n"
-
-        return text
-
     def _add_messages(self, messages: List[Dict[str, str]]):
         if not self.sessions.get(self.session_id):
             self.sessions[self.session_id] = [dict(role="system", content=prompts.DEFAULT_SYSTEM_PROMPT)]
 
+            output = ScriptDelivery.get_output_by_workflow_rid(self.session_id)
+            if output:
+                output_data = json.loads(output)
+
+                # user
+                input_fields = output_data["ui_design"]["inputFields"]
+                input_list = ["%s: %s" % (input_item["name"], input_item["value"]) for input_item in input_fields]
+                user_item = dict(role="user", content=", ".join(input_list) + "\n对这篇小说进行专业的评估与分析")
+                self.sessions[self.session_id].append(user_item)
+
+                # assistant
+                output_nodes = output_data["ui_design"]["outputNodes"][:3]
+                output_list = [output_node["data"]["template"]["text"]["value"] for output_node in output_nodes]
+                assistant_item = dict(role="assistant", content="\n".join(output_list))
+                self.sessions[self.session_id].append(assistant_item)
+
+            if len(self.sessions[self.session_id]) != 3:
+                raise ValueError("未发现rid: %s 的AI评估分析", self.session_id)
+
         logger.info("ChatCompletion => session_id: %s, raw messages[0]: %s", self.session_id, messages[0])
         if messages[0]["content"] == "起飞":
             messages.pop(0)
-            query = "===输出=== \n用简短、简练的文字概括这部小说的故事主旨"
-        else:
-            query = messages[0]["content"]
-        messages.insert(0, dict(role="user", content=self._get_content() + query))
+            messages.insert(0, dict(role="user", content="用简短、简练的文字概括故事主旨"))
 
         self._tmp_messages.extend(self.sessions[self.session_id])
         self._tmp_messages.extend(messages)
