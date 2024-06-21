@@ -53,7 +53,7 @@ class ChatCompletion:
 
     def _add_messages(self, messages: List[Dict[str, str]]):
         if not self.sessions.get(self.session_id):
-            self.sessions[self.session_id] = [dict(role="system", content=prompts.DEFAULT_SYSTEM_PROMPT)]
+            self.sessions[self.session_id] = [dict(role="system", content=prompts.DEFAULT_CHAT_PROMPT)]
 
         first_query = self._get_content()
         if messages[0]["content"] == "起飞":
