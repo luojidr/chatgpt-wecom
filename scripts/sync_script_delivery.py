@@ -3,7 +3,7 @@ import re
 import os.path
 import itertools
 from operator import itemgetter, attrgetter
-from datetime import timedelta
+from datetime import timedelta, datetime
 from urllib.parse import urlparse, parse_qs
 
 from sqlalchemy.orm import load_only
@@ -191,7 +191,12 @@ class SyncScriptDeliveryRules:
 
             for each_values in group_values:
                 tmp_push_date = tmp_push_date + timedelta(days=1)
+                # 周末不推
+                while tmp_push_date.weekday() in [5, 6]:
+                    tmp_push_date = tmp_push_date + timedelta(days=1)
+
                 push_date_str = tmp_push_date.strftime("%Y-%m-%d")
+                # print(group_name, each_item["author"], each_item["work_name"])
 
                 for each_item in each_values:
                     each_item["push_date"] = push_date_str
@@ -201,7 +206,7 @@ class SyncScriptDeliveryRules:
                         each_item["author"], each_item["work_name"], each_item["ai_score"]
                     )
                     logger.info(log_msg, *log_args)
-                    ScriptDelivery.create(**each_item)
+                    # ScriptDelivery.create(**each_item)
 
     def parse_records(self):
         logger.info('SyncScriptDelivery.parse_records => 【开始】同步數據')
