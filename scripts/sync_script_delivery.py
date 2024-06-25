@@ -206,7 +206,7 @@ class SyncScriptDeliveryRules:
                         each_item["author"], each_item["work_name"], each_item["ai_score"]
                     )
                     logger.info(log_msg, *log_args)
-                    # ScriptDelivery.create(**each_item)
+                    ScriptDelivery.create(**each_item)
 
     def parse_records(self):
         logger.info('SyncScriptDelivery.parse_records => 【开始】同步數據')
