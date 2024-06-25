@@ -199,3 +199,8 @@ def chat_completions():
         stream_with_context(chat.ChatCompletion(**chat_kwargs).stream_generator()),
         content_type='text/event-stream'
     )
+
+
+@blueprint.route("/platform/openai/cost/download")
+def platform_openai_cost():
+    pass
