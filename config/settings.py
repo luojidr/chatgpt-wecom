@@ -69,6 +69,7 @@ MAX_RETRY_TIMES = 3
 WT_API_BASE = "https://api.worktool.ymdyes.cn"
 WT_ROBOT_ID = env.str("WT_ROBOT_ID")
 # WT_GROUP_NAMES = env.list("WT_GROUP_NAMES", subcast=str, delimiter=",")
+WT_GROUP_MASTER = "小风机器人"
 
 
 MIDDLEWARES = [

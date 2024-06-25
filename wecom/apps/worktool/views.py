@@ -108,16 +108,18 @@ def callback_wecom():
     if match is not None:
         group_master = match.group(1).strip()
     else:
-        return jsonify(msg="未获取到群主！", status=200, data=None)
+        group_master = settings.WT_GROUP_MASTER
 
     if not data.get("rawSpoken", "").startswith("@" + group_master):
+        logger.info("callback => 未@群主不允许聊天, group_master：%s", group_master)
         return jsonify(msg="群聊消息！", status=200, data=None)
 
     query = data.get('spoken', "")
     receiver = data.get('receivedName')
 
     if query and receiver:
-        MessageReply(group_remark=group_remark).send_text(query, receiver=receiver)
+        _group_name = (group_remark or group_name).strip()
+        MessageReply(group_remark=_group_name).send_text(query, receiver=receiver)
 
     return jsonify(msg="ok", status=200, data=None)
 
