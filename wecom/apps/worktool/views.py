@@ -14,6 +14,7 @@ from wecom.bot.context import WTTextType
 from wecom.apps.worktool.models.script_delivery import ScriptDelivery
 from wecom.utils.log import logger
 from wecom.utils.reply import MessageReply
+from wecom.utils.scrcpy import is_cloud_phone_connected
 from wecom.utils.template import TopAuthorNewWorkTemplate, TopAuthorNewWorkContent
 from scripts.sync_script_delivery import SyncScriptDeliveryRules
 from wecom.apps.worktool.service import chat
@@ -34,6 +35,14 @@ def check_robot_status():
     if is_online:
         return jsonify(msg="rebot is online", status=200, data=None)
     return jsonify(msg="rebot is offline", status=5001, data=None)
+
+
+@blueprint.route("/scrcpy-phone/is_connected")
+def check_connected_to_scrcpy_phone():
+    if is_cloud_phone_connected():
+        return jsonify(msg="connected phone", status=200, data=None)
+
+    return jsonify(msg="disconnected phone", status=6001, data=None)
 
 
 @blueprint.route("/static/<string:filename>")
