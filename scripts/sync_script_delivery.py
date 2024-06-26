@@ -158,6 +158,24 @@ class SyncScriptDeliveryRules:
 
         return queryset
 
+    def _get_platform(self, scr_url):
+        exclude_list = ["www", "com", "cn"]
+        domain_keywords = {
+            "番茄": "fanqie",
+            "起点": "qidian",
+            "豆瓣": "douban"
+        }
+
+        ret = urlparse(scr_url)
+        hostname = ret.hostname or ""
+        domain_list = [s for s in hostname.split(".") if s and s not in exclude_list]
+
+        for platform, keyword in domain_keywords.items():
+            if any(keyword in d for d in domain_list):
+                return platform
+
+        return ""
+
     def save_db(self, ok_results):
         step = 2
         ok_results.sort(key=itemgetter("group_name"))  # 按组名分组排序
@@ -237,6 +255,9 @@ class SyncScriptDeliveryRules:
                     logger.info("以重复的数据: %s", filter_kw)
                     continue
 
+                # 计算小说所属平台
+                values["_get_platform"] = self._get_platform(values.get("src_url"))
+
                 if float(values.get('ai_score', '0')) >= self.min_ai_score:
                     ok_results.append(values)
 
@@ -252,8 +273,4 @@ if __name__ == "__main__":
             workflow_id="a0d1492e072a4c05893b692c4d19471e",
             user_id="86ab55af067944c196c2e6bc751b94f8"
         ).parse_records()
-
-
-
-
 

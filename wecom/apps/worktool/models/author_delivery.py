@@ -14,21 +14,18 @@ from .workflowrunrecord import WorkflowRunRecord
 from wecom.core.database import db, Column, BaseModel
 
 
-class ScriptDelivery(BaseModel):
-    __tablename__ = 'wecom_script_delivery'
+class AuthorDelivery(BaseModel):
+    __tablename__ = 'wecom_author_delivery'
 
     rid = Column(db.String(100), nullable=False, server_default='')
     output = db.Column(db.Text, nullable=False, default='', server_default='')
     author = Column(db.String(100), nullable=False, server_default='')                  # 作者
+    author_brief = Column(db.String(100), nullable=False, server_default='')            # 作者简介
     work_name = Column(db.String(200), nullable=False, server_default='')               # 作品名
-    theme = Column(db.String(200), nullable=False, server_default='')                   # 题材类型
-    core_highlight = Column(db.String(500), nullable=False, server_default='')          # 核心亮点
-    core_idea = Column(db.String(500), nullable=False, server_default='')               # 核心创意
-    pit_date = Column(db.String(20), nullable=False, server_default='')                 # 开坑时间
-    ai_score = Column(db.String(20), nullable=False, server_default='')                  # AI评分
+
     detail_url = Column(db.String(500), nullable=False, server_default='')              # 评估详情见链接
     src_url = Column(db.String(500), nullable=False, server_default='')                 # 原文链接
-    platform = Column(db.String(500), nullable=False, server_default='')                # 平台
+    platform = Column(db.String(500), nullable=False, server_default='')  # 平台
     uniq_id = Column(db.String(6), unique=True, nullable=False, server_default='')      # 唯一字段
     is_pushed = Column(db.Boolean, nullable=False, default=False, server_default='0')   # 是否推送
     group_name = Column(db.String(100), nullable=False, server_default='')              # 要推送的群组
