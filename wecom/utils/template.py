@@ -4,7 +4,13 @@ from typing import List
 
 
 class TemplateBase:
+    _title = None
     template = None
+
+    order_mapping = {
+        1: "①", 2: "②", 3: "③", 4: "④", 5: "⑤",
+        6: "⑥", 7: "⑦", 8: "⑧", 9: "⑧", 10: "⑩"
+    }
 
     def get_aligned_template_items(self):
         assert self.template, "模版不能为空"
@@ -27,6 +33,21 @@ class TemplateBase:
 
         return results
 
+    @property
+    def title(self):
+        push_date = date.today().strftime("%m-%d")
+        return self._title.format(push_date=push_date)
+
+    def get_text(self, fmt_text, fmt_kwargs, order_index):
+        pattern = re.compile(r'：\{(.*?)\}')
+        match = pattern.search(fmt_text)
+
+        if match:
+            target_name = match.group(1)
+            if fmt_kwargs.get(target_name):
+                fmt_kwargs["order"] = self.order_mapping[order_index]
+                return fmt_text.format(**fmt_kwargs)
+
 
 class TopAuthorNewWorkTemplate:
     """ 头部作者新作推荐 """
@@ -48,7 +69,6 @@ class TopAuthorNewWorkTemplate:
         self.author = author
         self.works_name = works_name
         self.theme = theme
-        self.author = author
         self.core_highlight = core_highlight
         self.core_idea = core_idea
         self.pit_date = pit_date
@@ -58,7 +78,7 @@ class TopAuthorNewWorkTemplate:
 
 
 class TopAuthorNewWorkContent(TemplateBase):
-    title = "[{push_date}] 今日高分IP推荐\n"
+    _title = "[{push_date}] 今日高分IP推荐\n"
     template = """
         {number}、{author}《{works_name}》
         {order}题材类型：{theme}
@@ -72,15 +92,10 @@ class TopAuthorNewWorkContent(TemplateBase):
 
     def __init__(self, templates: List[TopAuthorNewWorkTemplate]):
         self.templates = templates
-        self.order_mapping = {
-            1: "①", 2: "②", 3: "③", 4: "④", 5: "⑤",
-            6: "⑥", 7: "⑦", 8: "⑧", 9: "⑧", 10: "⑩"
-        }
 
     def get_layout_content(self):
         content_list = []
         pattern = re.compile(r'：\{(.*?)\}')
-        push_date = date.today().strftime("%m-%d")
         template_items = self.get_aligned_template_items()
 
         for number, template in enumerate(self.templates, 1):
@@ -100,5 +115,61 @@ class TopAuthorNewWorkContent(TemplateBase):
 
             content_list.append("\n".join(text_list) + "\n")
 
-        return self.title.format(push_date=push_date) + "\n".join(content_list).strip()
+        return self.title + "\n".join(content_list).strip()
+
+
+class AuthorTemplate:
+    """ 作者新番(每天新增的作品) """
+
+    def __init__(self, author: str, works_name: str, theme: str, brief: str, src_url: str, platform:str):
+        """
+        :param author: 作者名
+        :param works_name: 作品名
+        :param theme: 题材类型
+        :param brief: 作者/作品简介
+        :param platform: 出处平台
+        :param src_url: 原文链接
+        """
+        self.author = author
+        self.works_name = works_name
+        self.theme = theme
+        self.brief = brief
+        self.src_url = src_url
+        self.platform = platform
+
+
+class AuthorContent(TemplateBase):
+        _title = "[{push_date}] 今日新番推荐\n"
+        template = """
+            {order}作者：{author}
+            {order}新番作品：{works_name}
+            {order}题材类型：{theme}
+            {order}作者简介：{brief}
+            {order}平台：{platform}
+            {order}出处链接：{src_url}
+        """
+
+        def __init__(self, templates: List[AuthorTemplate]):
+            self.templates = templates
+
+        def get_layout_content(self):
+            content_list = []
+            template_items = self.get_aligned_template_items()
+
+            for number, template in enumerate(self.templates, 1):
+                order_index = 0
+                kwargs = dict(number=number, **template.__dict__)
+                text_list = []
+
+                for line_str in template_items:
+                    order_index += 1
+                    text = self.get_text(line_str, kwargs, order_index)
+                    if text:
+                        text_list.append(text)
+                    else:
+                        order_index -= 1
+
+                content_list.append("\n".join(text_list) + "\n")
+
+            return self.title + "\n".join(content_list).strip()
 

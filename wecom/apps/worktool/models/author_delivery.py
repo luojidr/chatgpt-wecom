@@ -18,36 +18,21 @@ class AuthorDelivery(BaseModel):
     __tablename__ = 'wecom_author_delivery'
 
     rid = Column(db.String(100), nullable=False, server_default='')
-    output = db.Column(db.Text, nullable=False, default='', server_default='')
     author = Column(db.String(100), nullable=False, server_default='')                  # 作者
-    author_brief = Column(db.String(100), nullable=False, server_default='')            # 作者简介
+    brief = Column(db.String(100), nullable=False, server_default='')                   # 作者简介
     work_name = Column(db.String(200), nullable=False, server_default='')               # 作品名
+    theme = Column(db.String(200), nullable=False, server_default='')                   # 作品题材类型
 
-    detail_url = Column(db.String(500), nullable=False, server_default='')              # 评估详情见链接
+    # detail_url = Column(db.String(500), nullable=False, server_default='')              # 评估详情见链接
     src_url = Column(db.String(500), nullable=False, server_default='')                 # 原文链接
     platform = Column(db.String(500), nullable=False, server_default='')  # 平台
     uniq_id = Column(db.String(6), unique=True, nullable=False, server_default='')      # 唯一字段
     is_pushed = Column(db.Boolean, nullable=False, default=False, server_default='0')   # 是否推送
     group_name = Column(db.String(100), nullable=False, server_default='')              # 要推送的群组
-    push_date = Column(db.String(10), nullable=False, server_default='')                # 要推送的日期
+    # push_date = Column(db.String(10), nullable=False, server_default='')                # 要推送的日期
     is_delete = Column(db.Boolean, nullable=False, default=False, server_default='0')   # 是否删除
     pushed_time = Column(db.DateTime)                                                   # 推送时间
     finished_time = Column(db.DateTime)                                                 # 数据接收完成时间
-
-    @classmethod
-    def get_unique_id(cls, k=6):
-        query = cls.query.options(load_only(cls.uniq_id)).all()
-        uniq_ids_set = {obj.uniq_id for obj in query}
-
-        retry_time = 0
-        while retry_time < len(uniq_ids_set) + 1:
-            retry_time += 1
-            uniq_seq = "".join(random.choices(string.ascii_letters, k=k))
-
-            if uniq_seq not in uniq_ids_set:
-                return uniq_seq
-
-        raise ValueError("[ScriptDelivery] 计算唯一id失败")
 
     @classmethod
     def create(cls, **kwargs):
@@ -85,7 +70,7 @@ class AuthorDelivery(BaseModel):
         return cls.query.filter_by(**kwargs).first()
 
     @classmethod
-    def get_required_script_delivery_list(cls):
+    def get_required_author_delivery_list(cls):
         results = {}
         push_date = date.today().strftime("%Y-%m-%d")
         queryset = cls.query.filter_by(push_date=push_date, is_pushed=False, is_delete=False).all()
@@ -143,8 +128,8 @@ class AuthorDelivery(BaseModel):
         return is_new, push_date
 
     @classmethod
-    def update_push(cls, uniq_ids):
-        cls.query.filter(cls.uniq_id.in_(uniq_ids)).update({"is_pushed": 1, "pushed_time": func.now()})
+    def update_push_by_ids(cls, ids):
+        cls.query.filter(cls.id.in_(ids)).update({"is_pushed": 1, "pushed_time": func.now()})
         db.session.commit()
 
 
