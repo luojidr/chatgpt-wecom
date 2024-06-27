@@ -47,12 +47,12 @@ def check_connected_to_scrcpy_phone():
 
 
 @blueprint.route("/rebot/send/autodetect")
-def autodetect_rebot():
-    return jsonify(msg="autodetect", status=200, data=scrcpy.autodetect_rebot_send())
+def autodetect_rebot_sent():
+    return jsonify(msg="autodetect", status=200, data=scrcpy.autodetect_rebot_sent())
 
 
 @blueprint.route("/rebot/reply/autodetect")
-def autodetect_rebot():
+def autodetect_rebot_reply():
     return jsonify(msg="autodetect", status=200, data=scrcpy.autodetect_rebot_reply())
 
 

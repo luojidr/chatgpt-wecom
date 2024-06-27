@@ -56,7 +56,7 @@ def save_rebot_auto_reply(callback_data):
                 )
 
 
-def autodetect_rebot_send():
+def autodetect_rebot_sent():
     fake = Faker(locale="zh_CN")
     short_sentence: str = fake.sentence()
 
