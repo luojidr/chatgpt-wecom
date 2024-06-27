@@ -56,7 +56,7 @@ def save_rebot_auto_reply(callback_data):
                 )
 
 
-def autodetect_rebot_reply(timeout: int = 60) -> int:
+def autodetect_rebot_send():
     fake = Faker(locale="zh_CN")
     short_sentence: str = fake.sentence()
 
@@ -70,15 +70,21 @@ def autodetect_rebot_reply(timeout: int = 60) -> int:
 
     # eg: {"code": 200, "message": "指令已加入代发队列中！", "data": "1806166646799163392"}
     result["msg_id"] = result.get("data") or ""
-    instance = RebotDetection.create(opt_type=RebotType.DETECT_SEND, text=short_sentence, **result)
-    msg_id = instance.msg_id
-    send_timestamp = instance.timestamp
+    RebotDetection.create(opt_type=RebotType.DETECT_SEND, text=short_sentence, **result)
 
-    while int(time.time()) - send_timestamp < timeout:
-        obj = RebotDetection.get_by_msg_id(msg_id=msg_id, opt_type=RebotType.DETECT_REPLY)
-        if obj:
-            return 1
-        time.sleep(3)
+
+def autodetect_rebot_reply() -> int:
+    default_timeout = 60
+
+    # 找到最近的推送消息
+    sent_obj = RebotDetection.get_latest_from_already_sent()
+    reply_obj = RebotDetection.get_by_msg_id(msg_id=sent_obj.msg_id, opt_type=RebotType.DETECT_REPLY)
+
+    sent_timestamp = sent_obj.timestamp if sent_obj else 0
+    reply_timestamp = reply_obj.timestamp if reply_obj else 0
+
+    if reply_timestamp - sent_timestamp < default_timeout:
+        return 1
 
     return 2
 

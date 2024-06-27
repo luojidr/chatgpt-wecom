@@ -46,6 +46,11 @@ def check_connected_to_scrcpy_phone():
     return jsonify(msg="disconnected phone", status=6001, data=None)
 
 
+@blueprint.route("/rebot/send/autodetect")
+def autodetect_rebot():
+    return jsonify(msg="autodetect", status=200, data=scrcpy.autodetect_rebot_send())
+
+
 @blueprint.route("/rebot/reply/autodetect")
 def autodetect_rebot():
     return jsonify(msg="autodetect", status=200, data=scrcpy.autodetect_rebot_reply())

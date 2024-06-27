@@ -24,6 +24,7 @@ class RebotDetection(BaseModel):
     code = Column(db.Integer, nullable=False, server_default='0')                       # 机器人接口返回的状态码
     message = Column(db.String(200), nullable=False, server_default='')                 # 机器人接口返回的信息
     msg_id = Column(db.String(50), nullable=False, server_default='')                   # 机器人接口返回的信息ID
+    # detect_cnt = Column(db.SmallInteger, nullable=False, server_default='0')            # 探测回复的次数
 
     @classmethod
     def create(cls, opt_type: RebotType, text: str = None, batch_seq: str = None, **kwargs):
@@ -55,3 +56,6 @@ class RebotDetection(BaseModel):
     def get_by_msg_id(cls, msg_id: str, opt_type: RebotType):
         return cls.query.filter_by(msg_id=msg_id, opt_type=opt_type.value).order_by(cls.id.asc()).first()
 
+    @classmethod
+    def get_latest_from_already_sent(cls):
+        return cls.query.filter_by(opt_type=RebotType.DETECT_SEND.value).order_by(cls.id.desc()).first()
