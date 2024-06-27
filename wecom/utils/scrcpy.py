@@ -61,7 +61,7 @@ def autodetect_rebot_reply(timeout: int = 60) -> int:
     short_sentence: str = fake.sentence()
 
     receiver = settings.WT_ROBOT_DETECTION_RECEIVER
-    query = datetime.now().strftime("%Y-%m-%d %H:%M:%S") + short_sentence
+    query = "[%s] %s" % (datetime.now().strftime("%Y-%m-%d %H:%M:%S"), short_sentence)
     result = MessageReply().simple_push(query, receiver=receiver)
 
     if not result:
