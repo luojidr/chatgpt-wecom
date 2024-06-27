@@ -49,7 +49,10 @@ def save_rebot_auto_reply(callback_data):
         if error_reason is not None and len(error_reason) == 0:
             obj = RebotDetection.get_by_msg_id(msg_id=message_id, opt_type=RebotType.DETECT_SEND)
             if obj:
-                RebotDetection.create(opt_type=RebotType.DETECT_REPLY, text="auto_reply", batch_seq=obj.batch_seq)
+                RebotDetection.create(
+                    opt_type=RebotType.DETECT_REPLY, text="auto_reply",
+                    batch_seq=obj.batch_seq, msg_id=message_id,
+                )
 
 
 def autodetect_rebot_reply(timeout: int = 60) -> int:
