@@ -52,16 +52,17 @@ def save_rebot_auto_reply(callback_data):
                 RebotDetection.create(opt_type=RebotType.DETECT_REPLY, text="auto_reply", batch_seq=obj.batch_seq)
 
 
-def autodetect_rebot_reply(timeout: int = 60):
+def autodetect_rebot_reply(timeout: int = 60) -> int:
     fake = Faker(locale="zh_CN")
     short_sentence: str = fake.sentence()
 
     query = short_sentence
-    result = MessageReply().send_text(query=query, receiver=settings.WT_ROBOT_DETECTION_RECEIVER)
+    receiver = settings.WT_ROBOT_DETECTION_RECEIVER
+    result = MessageReply().simple_push(query, receiver=receiver)
 
     if not result:
         logger.warn("机器人探测推送失败，请检查机器人是否正常")
-        return
+        return 0
 
     # eg: {"code": 200, "message": "指令已加入代发队列中！", "data": "1806166646799163392"}
     result["msg_id"] = result.get("data") or ""
@@ -72,8 +73,8 @@ def autodetect_rebot_reply(timeout: int = 60):
     while int(time.time()) - send_timestamp < timeout:
         obj = RebotDetection.get_by_msg_id(msg_id=msg_id, opt_type=RebotType.DETECT_REPLY)
         if obj:
-            return True
+            return 1
         time.sleep(3)
 
-    return False
+    return 2
 
