@@ -258,7 +258,7 @@ class SyncScriptDeliveryRules:
                     continue
 
                 # 计算小说所属平台
-                values["_get_platform"] = self._get_platform(values.get("src_url"))
+                values["platform"] = self._get_platform(values.get("src_url"))
 
                 if float(values.get('ai_score', '0')) >= self.min_ai_score:
                     ok_results.append(values)
