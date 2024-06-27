@@ -1,4 +1,5 @@
 import time
+from datetime import datetime
 
 from faker import Faker
 from pyquery import PyQuery
@@ -59,8 +60,8 @@ def autodetect_rebot_reply(timeout: int = 60) -> int:
     fake = Faker(locale="zh_CN")
     short_sentence: str = fake.sentence()
 
-    query = short_sentence
     receiver = settings.WT_ROBOT_DETECTION_RECEIVER
+    query = datetime.now().strftime("%Y-%m-%d %H:%M:%S") + short_sentence
     result = MessageReply().simple_push(query, receiver=receiver)
 
     if not result:
