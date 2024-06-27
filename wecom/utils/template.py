@@ -1,3 +1,4 @@
+import os
 import re
 from datetime import date
 from typing import List
@@ -52,8 +53,8 @@ class TemplateBase:
 class TopAuthorNewWorkTemplate:
     """ 头部作者新作推荐 """
     def __init__(self,
-                 author: str, works_name: str, theme: str, core_highlight: str,
-                 core_idea: str, pit_date: str, ai_score: str, detail_url: str, src_url: str
+                 author: str, works_name: str, theme: str, core_highlight: str, core_idea: str,
+                 pit_date: str, ai_score: str, detail_url: str, src_url: str, platform: str
                  ):
         """
         :param author: 作者名
@@ -65,6 +66,7 @@ class TopAuthorNewWorkTemplate:
         :param ai_score: AI评分
         :param detail_url: 评估详情见链接
         :param src_url: 原文链接
+        :param platform: 出处平台
         """
         self.author = author
         self.works_name = works_name
@@ -75,6 +77,7 @@ class TopAuthorNewWorkTemplate:
         self.ai_score = ai_score
         self.detail_url = detail_url
         self.src_url = src_url
+        self.platform = platform
 
 
 class TopAuthorNewWorkContent(TemplateBase):
@@ -88,6 +91,7 @@ class TopAuthorNewWorkContent(TemplateBase):
         {order}AI评分：{ai_score}
           评分链接：{detail_url}
         {order}出处链接：{src_url}
+        {order}平台：{platform}
     """
 
     def __init__(self, templates: List[TopAuthorNewWorkTemplate]):
@@ -121,7 +125,7 @@ class TopAuthorNewWorkContent(TemplateBase):
 class AuthorTemplate:
     """ 作者新番(每天新增的作品) """
 
-    def __init__(self, author: str, works_name: str, theme: str, brief: str, src_url: str, platform:str):
+    def __init__(self, author: str, works_name: str, theme: str, brief: str, src_url: str, platform: str):
         """
         :param author: 作者名
         :param works_name: 作品名
@@ -138,15 +142,14 @@ class AuthorTemplate:
         self.platform = platform
 
 
-class AuthorContent(TemplateBase):
-        _title = "[{push_date}] 今日新番推荐\n"
+class AuthorContentCouple(TemplateBase):
+        _title = "[{push_date}] 头部作者开新坑啦\n"
         template = """
-            {order}作者：{author}
-            {order}新番作品：{works_name}
+            {number}、{author}
+            {order}新坑名称：{works_name}
             {order}题材类型：{theme}
+            {order}新坑链接：{platform} {src_url}
             {order}作者简介：{brief}
-            {order}平台：{platform}
-            {order}出处链接：{src_url}
         """
 
         def __init__(self, templates: List[AuthorTemplate]):
@@ -172,4 +175,36 @@ class AuthorContent(TemplateBase):
                 content_list.append("\n".join(text_list) + "\n")
 
             return self.title + "\n".join(content_list).strip()
+
+
+class AuthorContentMore(TemplateBase):
+    _title = "[{push_date}] 头部作者开新坑啦\n"
+    template = """
+            今天共有{author_cnt}位作者开新坑
+    
+            1、{author}
+            ①新坑名称：{works_name}
+            ②题材类型：{theme}
+            ③新坑链接：{platform} {src_url}
+            ④作者简介：{brief}
+            
+            2、其他头部作者
+             ①作者姓名：{authors}
+             ②新坑详情：{detail_url}
+        """
+
+    def __init__(self, templates: List[AuthorTemplate]):
+        self.templates = templates
+
+    def get_layout_content(self):
+        kwargs = dict(
+            authors="、".join([template.author for template in self.templates[1:]]),
+            detail_url=os.environ["MY_HOST"] + "/top/author/more",
+            **self.templates[0].__dict__
+        )
+
+        template_items = self.get_aligned_template_items()
+        new_template = "\n".join(template_items)
+
+        return self.title + new_template.format(**kwargs)
 

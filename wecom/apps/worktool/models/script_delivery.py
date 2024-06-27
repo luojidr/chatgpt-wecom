@@ -14,6 +14,38 @@ from .workflowrunrecord import WorkflowRunRecord
 from wecom.core.database import db, Column, BaseModel
 
 
+class OutputDelivery(BaseModel):
+    __tablename__ = 'wecom_output_delivery'
+
+    rid = Column(db.String(100), nullable=False, server_default='')
+    output = db.Column(db.Text, nullable=False, default='', server_default='')
+
+    @classmethod
+    def get_output_text_by_rid(cls, rid):
+        obj = cls.query.filter_by(rid=rid).first()
+        if obj:
+            return obj.output
+
+    @classmethod
+    def create(cls, rid: str):
+        obj = OutputDelivery.query.filter_by(rid=rid).first()
+        if obj:
+            return
+
+        instance = None
+        runrecord_obj = WorkflowRunRecord.query\
+            .options(load_only(WorkflowRunRecord.general_details))\
+            .filter_by(rid=rid)\
+            .first()
+
+        if runrecord_obj:
+            instance = cls(rid=rid, output=runrecord_obj.general_details)
+            db.session.add(instance)
+            db.session.commit()
+
+        return instance
+
+
 class ScriptDelivery(BaseModel):
     __tablename__ = 'wecom_script_delivery'
 

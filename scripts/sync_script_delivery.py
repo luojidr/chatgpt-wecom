@@ -13,7 +13,7 @@ from sqlalchemy.orm import load_only
 
 from config import settings
 from wecom.utils.log import logger
-from wecom.apps.worktool.models.script_delivery import ScriptDelivery
+from wecom.apps.worktool.models.script_delivery import ScriptDelivery, OutputDelivery
 from wecom.apps.worktool.models.workflowrunrecord import WorkflowRunRecord
 
 
@@ -217,13 +217,15 @@ class SyncScriptDeliveryRules:
                 # print(group_name, each_item["author"], each_item["work_name"])
 
                 for each_item in each_values:
+                    rid = each_item["rid"]
                     each_item["push_date"] = push_date_str
 
                     log_args = (
-                        group_name, push_date_str, each_item["rid"],
+                        group_name, push_date_str, rid,
                         each_item["author"], each_item["work_name"], each_item["ai_score"]
                     )
                     logger.info(log_msg, *log_args)
+                    OutputDelivery.create(rid=rid)
                     ScriptDelivery.create(**each_item)
 
     def parse_records(self):
@@ -270,7 +272,7 @@ if __name__ == "__main__":
 
     with app.app_context():
         SyncScriptDeliveryRules(
-            workflow_id="a0d1492e072a4c05893b692c4d19471e",
+            workflow_id="5a5972201eb4432ca9dfb434d3b4a931",
             user_id="86ab55af067944c196c2e6bc751b94f8"
         ).parse_records()
 

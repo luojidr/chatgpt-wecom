@@ -1,4 +1,3 @@
-import json
 import re
 import os.path
 
@@ -11,12 +10,10 @@ from flask import Response, stream_with_context
 
 from config import settings
 from wecom.bot.context import WTTextType
-from wecom.apps.worktool.service import chat
-from wecom.apps.worktool.models.script_delivery import ScriptDelivery
+from wecom.apps.worktool.service import chat, render, delivery
 from wecom.utils import scrcpy
 from wecom.utils.log import logger
 from wecom.utils.reply import MessageReply
-from wecom.utils.template import TopAuthorNewWorkTemplate, TopAuthorNewWorkContent
 from scripts.sync_script_delivery import SyncScriptDeliveryRules
 
 
@@ -74,30 +71,7 @@ def push():
     if not is_online:
         return jsonify(msg="rebot is offline", status=5003, data=None)
 
-    results = ScriptDelivery.get_required_script_delivery_list()
-
-    for group_name, objects in results.items():
-        templates = []
-        uniq_ids = []
-
-        for obj in objects:
-            templates.append(
-                TopAuthorNewWorkTemplate(
-                    author=obj.author, works_name=obj.work_name,
-                    theme=obj.theme, core_highlight=obj.core_highlight,
-                    core_idea=obj.core_idea,
-                    pit_date=obj.pit_date, ai_score=obj.ai_score,
-                    detail_url=obj.detail_url, src_url=obj.src_url
-                )
-            )
-            uniq_ids.append(obj.uniq_id)
-
-        if uniq_ids:
-            ScriptDelivery.update_push(uniq_ids)
-
-            content = TopAuthorNewWorkContent(templates).get_layout_content()
-            MessageReply(group_remark=group_name).simple_push(content=content, receiver="所有人", max_length=700)
-
+    delivery.DeliveryScript().push()
     return jsonify(msg="ok", status=200, data=None)
 
 
@@ -147,67 +121,7 @@ def callback_wecom():
 
 @blueprint.route('/evaluation', methods=['GET'])
 def ai_evaluation_detail():
-    def get_node_data(output_node, regex, pos="first"):
-        name = output_node["data"]["template"]["output_title"]["value"]
-        string = output_node["data"]["template"]["text"]["value"]
-
-        iter_list = list(regex.finditer(string))
-        data_list = []
-
-        for index, itor in enumerate(iter_list):
-            end = itor.end()
-
-            if index < len(iter_list) - 1:
-                value = string[end: iter_list[index + 1].start()]
-            else:
-                value = string[end:]
-
-            vals = value.strip().split("\n")
-            vals = [s.lstrip(" -") for s in vals]
-
-            if pos == "first":
-                data_list.append(dict(title=itor.group(0), vals=vals))
-            elif pos == "mid":
-                data_list.append(dict(vals=[itor.group(0) + "".join(vals)]))
-            elif pos == "tail":
-                data_list.append(dict(vals=[itor.group(0) + s for s in vals]))
-
-        return dict(name=name, vals=data_list)
-
-    params = request.args
-    tid = params.get("tid")
-    script_delivery_obj = ScriptDelivery.get_object(uniq_id=tid)
-    output_str = ScriptDelivery.get_output_by_uniq_id(uniq_id=tid)
-
-    if not script_delivery_obj or not output_str:
-        return "<html>404</html>"
-
-    input_list = []
-    output = json.loads(output_str)
-    input_fields = output["ui_design"]["inputFields"]
-    output_nodes = output["ui_design"]["outputNodes"]
-
-    for input_item in input_fields:
-        input_list.append(dict(
-            name=input_item["name"],
-            text=input_item["value"],
-        ))
-
-    regex1 = re.compile(r"【(.*?)】：", re.M | re.S)
-    regex2 = re.compile(r"\d\.", re.M | re.S)
-
-    output_list = [
-        get_node_data(output_nodes[0], regex1),
-        get_node_data(output_nodes[1], regex2, pos="mid"),
-        get_node_data(output_nodes[2], regex1, pos="tail"),
-    ]
-
-    context = {
-        "input_list": input_list,
-        "output_list": output_list,
-        "chat_url": f"{os.environ['CHAT_BASE_URL']}?runId={script_delivery_obj.rid}",
-    }
-    return render_template("wecom/evaluation_detail.html", **context)
+    return render.RenderTemplate("wecom/evaluation_detail.html").render()
 
 
 @blueprint.route("/v1/chat/completions", methods=['POST'])
