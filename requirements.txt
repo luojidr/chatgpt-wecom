@@ -57,3 +57,5 @@ fake_useragent==1.5.1
 python-dotenv==1.0.1
 pycryptodome==3.20.0
 gunicorn==22.0.0
+pyquery==2.0.0
+playwright==1.44.0

@@ -104,16 +104,25 @@ class MessageReply:
         if not receiver and not at_all:
             logger.info("推送不能为空")
 
+        text_list: List[Dict[str, Any]] = []
         segments: List[str] = split_long_text_by_sentences(content, max_length=max_length)
-        text_list: List[Dict[str, Any]] = [
-            dict(
+
+        for one_seg in segments:
+            if not self.group_remark:
+                title_list = [receiver]
+                received_content = one_seg
+                at_list = []
+            else:
+                title_list = [self.group_remark]
+                received_content = "\n%s" % one_seg
+                at_list = [receiver if receiver else "所有人"]
+
+            text_list.append(dict(
                 type=SendType.TEXT.value,
-                titleList=[self.group_remark],
-                receivedContent="\n%s" % seg,
-                atList=[receiver if receiver else "所有人"]
-            )
-            for seg in segments
-        ]
+                titleList=title_list,
+                receivedContent=received_content,
+                atList=at_list
+            ))
 
         payload = dict(socketType=2, list=text_list)
         return self.request(self.api_base + self.SEND_RAW_MSG_API, payload=payload)

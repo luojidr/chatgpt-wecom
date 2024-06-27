@@ -70,6 +70,7 @@ WT_API_BASE = "https://api.worktool.ymdyes.cn"
 WT_ROBOT_ID = env.str("WT_ROBOT_ID")
 # WT_GROUP_NAMES = env.list("WT_GROUP_NAMES", subcast=str, delimiter=",")
 WT_GROUP_MASTER = "小风机器人"
+WT_ROBOT_DETECTION_RECEIVER = env.str("WT_ROBOT_DETECTION_RECEIVER")
 
 
 MIDDLEWARES = [
