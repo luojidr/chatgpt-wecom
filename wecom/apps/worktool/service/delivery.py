@@ -83,7 +83,7 @@ class DeliveryScript:
             if uniq_ids:
                 content = TopAuthorNewWorkContent(templates).get_layout_content()
                 push_kw = dict(content=content, receiver="所有人", max_length=700)
-                result = MessageReply(group_remark=group_name).simple_push(*push_kw)
+                result = MessageReply(group_remark=group_name).simple_push(**push_kw)
 
                 # eg: {'code': 200, 'message': '操作成功', 'data': True}
                 if result.get("code") == 200 and result.get("data"):
