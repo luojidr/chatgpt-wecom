@@ -11,13 +11,14 @@ from flask import Response, stream_with_context
 
 from config import settings
 from wecom.bot.context import WTTextType
+from wecom.apps.worktool.service import chat
 from wecom.apps.worktool.models.script_delivery import ScriptDelivery
+from wecom.utils import scrcpy
 from wecom.utils.log import logger
 from wecom.utils.reply import MessageReply
-from wecom.utils.scrcpy import is_cloud_phone_connected
 from wecom.utils.template import TopAuthorNewWorkTemplate, TopAuthorNewWorkContent
 from scripts.sync_script_delivery import SyncScriptDeliveryRules
-from wecom.apps.worktool.service import chat
+
 
 blueprint = Blueprint("wecom", __name__, url_prefix="/wecom", static_folder="../static")
 
@@ -39,10 +40,15 @@ def check_robot_status():
 
 @blueprint.route("/scrcpy-phone/is_connected")
 def check_connected_to_scrcpy_phone():
-    if is_cloud_phone_connected():
+    if scrcpy.is_cloud_phone_connected():
         return jsonify(msg="connected phone", status=200, data=None)
 
     return jsonify(msg="disconnected phone", status=6001, data=None)
+
+
+@blueprint.route("/rebot/reply/autodetect")
+def autodetect_rebot():
+    return jsonify(msg="autodetect", status=200, data=scrcpy.autodetect_rebot_reply())
 
 
 @blueprint.route("/static/<string:filename>")
@@ -104,6 +110,7 @@ def callback_wecom():
 
     data = request.json
     logger.info("callback => data: %s", data)
+    scrcpy.save_rebot_auto_reply(callback_data=data)
 
     text_type = data.get("textType", 0)
     if text_type != WTTextType.TEXT.value:

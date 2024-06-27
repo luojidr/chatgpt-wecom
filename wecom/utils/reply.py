@@ -88,11 +88,15 @@ class MessageReply:
         text_list: List[Dict[str, Any]] = []
 
         for seg_text in segments:
-            text_list.append(dict(
-                type=SendType.TEXT.value,
-                titleList=[self.group_remark],
-                receivedContent="@%s\n%s" % (receiver, seg_text)
-            ))
+            if not self.group_remark:
+                title_list = [receiver]
+                received_content = seg_text
+            else:
+                title_list = [self.group_remark]
+                received_content = "@%s\n%s" % (receiver, seg_text)
+
+            send_type = SendType.TEXT.value
+            text_list.append(dict(type=send_type, titleList=title_list, receivedContent=received_content))
 
         payload = dict(socketType=2, list=text_list)
         return self.request(self.api_base + self.SEND_RAW_MSG_API, payload=payload)
