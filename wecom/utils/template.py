@@ -39,14 +39,15 @@ class TemplateBase:
         push_date = date.today().strftime("%m-%d")
         return self._title.format(push_date=push_date)
 
-    def get_text(self, fmt_text, fmt_kwargs, order_index):
-        pattern = re.compile(r'：\{(.*?)\}')
+    def get_text(self, fmt_text, fmt_kwargs):
+        pattern = re.compile(r'\{(.*?)\}')
         match = pattern.search(fmt_text)
 
         if match:
             target_name = match.group(1)
             if fmt_kwargs.get(target_name):
-                fmt_kwargs["order"] = self.order_mapping[order_index]
+                # order_index = fmt_kwargs["order_index"]
+                # fmt_kwargs["order"] = self.order_mapping[order_index]
                 return fmt_text.format(**fmt_kwargs)
 
 
@@ -99,7 +100,7 @@ class TopAuthorNewWorkContent(TemplateBase):
 
     def get_layout_content(self):
         content_list = []
-        pattern = re.compile(r'：\{(.*?)\}')
+        pattern = re.compile(r'\{(.*?)\}')
         template_items = self.get_aligned_template_items()
 
         for number, template in enumerate(self.templates, 1):
@@ -108,14 +109,15 @@ class TopAuthorNewWorkContent(TemplateBase):
             text_list = [template_items[0].format(**kwargs)]
 
             for line_str in template_items[1:]:
-                match = pattern.search(line_str)
+                match_list = pattern.findall(line_str)
 
-                if match:
-                    target_name = match.group(1)
-                    if kwargs.get(target_name):
+                if match_list:
+                    # 序列+后面的字段非空的
+                    if "order" in match_list and kwargs.get(match_list[-1]):
                         order_index += 1
                         kwargs["order"] = self.order_mapping[order_index]
-                        text_list.append(line_str.format(**kwargs))
+
+                    text_list.append(line_str.format(**kwargs))
 
             content_list.append("\n".join(text_list) + "\n")
 
@@ -146,10 +148,10 @@ class AuthorContentCouple(TemplateBase):
         _title = "[{push_date}] 头部作者开新坑啦\n"
         template = """
             {number}、{author}
-            {order}新坑名称：{works_name}
-            {order}题材类型：{theme}
-            {order}新坑链接：{platform} {src_url}
-            {order}作者简介：{brief}
+            ①新坑名称：{works_name}
+            ②题材类型：{theme}
+            ③新坑链接：{platform} {src_url}
+            ④作者简介：{brief}
         """
 
         def __init__(self, templates: List[AuthorTemplate]):
@@ -160,17 +162,13 @@ class AuthorContentCouple(TemplateBase):
             template_items = self.get_aligned_template_items()
 
             for number, template in enumerate(self.templates, 1):
-                order_index = 0
                 kwargs = dict(number=number, **template.__dict__)
                 text_list = []
 
                 for line_str in template_items:
-                    order_index += 1
-                    text = self.get_text(line_str, kwargs, order_index)
+                    text = self.get_text(line_str, kwargs)
                     if text:
                         text_list.append(text)
-                    else:
-                        order_index -= 1
 
                 content_list.append("\n".join(text_list) + "\n")
 
@@ -193,13 +191,15 @@ class AuthorContentMore(TemplateBase):
              ②新坑详情：{detail_url}
         """
 
-    def __init__(self, templates: List[AuthorTemplate]):
+    def __init__(self, templates: List[AuthorTemplate], batch_id: str):
         self.templates = templates
+        self.batch_id = batch_id
 
     def get_layout_content(self):
         kwargs = dict(
+            author_cnt=len(self.templates),
             authors="、".join([template.author for template in self.templates[1:]]),
-            detail_url=os.environ["MY_HOST"] + "/top/author/more",
+            detail_url=os.environ["MY_HOST"] + "/wecom/top_author/more?bid=%s" % self.batch_id,
             **self.templates[0].__dict__
         )
 

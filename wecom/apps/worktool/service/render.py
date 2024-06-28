@@ -1,10 +1,12 @@
 import re
 import json
 import os.path
+from datetime import date
 
 from flask import request
 from flask import render_template
 
+from wecom.apps.worktool.models.author_delivery import AuthorDelivery
 from wecom.apps.worktool.models.script_delivery import ScriptDelivery, OutputDelivery
 
 
@@ -74,6 +76,14 @@ class RenderTemplate:
             "output_list": output_list,
             "chat_url": f"{os.environ['CHAT_BASE_URL']}?runId={script_delivery_obj.rid}",
         }
+
+    def get_top_author_more_detail(self):
+        batch_id = request.args.get("bid")
+        if not batch_id:
+            return "<html>404</html>"
+
+        queryset = AuthorDelivery.get_more_authors_by_batch_id(batch_id)
+        return dict(object_list=queryset)
 
     def get_context(self):
         name = os.path.basename(self.template_name)

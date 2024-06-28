@@ -53,6 +53,12 @@ def autodetect_rebot_reply():
     return jsonify(msg="autodetect", status=200, data=scrcpy.autodetect_rebot_reply())
 
 
+@blueprint.route("/top_author/fresh")
+def fresh_top_author_brief():
+    delivery.auto_fresh_top_author_brief()
+    return jsonify(msg="autodetect", status=200, data=None)
+
+
 @blueprint.route("/static/<string:filename>")
 def download(filename):
     static_path = os.path.join(settings.PROJECT_PATH, "staticfiles")
@@ -65,13 +71,23 @@ def download(filename):
     return send_from_directory(static_path, filename, as_attachment=True)
 
 
-@blueprint.route("/push", methods=["POST"])
-def push():
+@blueprint.route("/ai/evaluation/push", methods=["POST"])
+def push_ai_evaluation():
     is_online = MessageReply().get_rebot_status()
     if not is_online:
         return jsonify(msg="rebot is offline", status=5003, data=None)
 
     delivery.DeliveryScript().push()
+    return jsonify(msg="ok", status=200, data=None)
+
+
+@blueprint.route("/top_author/push", methods=["POST"])
+def push_top_author():
+    is_online = MessageReply().get_rebot_status()
+    if not is_online:
+        return jsonify(msg="rebot is offline", status=5003, data=None)
+
+    delivery.DeliveryAuthor().push()
     return jsonify(msg="ok", status=200, data=None)
 
 
@@ -122,6 +138,11 @@ def callback_wecom():
 @blueprint.route('/evaluation', methods=['GET'])
 def ai_evaluation_detail():
     return render.RenderTemplate("wecom/evaluation_detail.html").render()
+
+
+@blueprint.route('/top_author/more', methods=['GET'])
+def top_author_more_detail():
+    return render.RenderTemplate("wecom/top_author_more_detail.html").render()
 
 
 @blueprint.route("/v1/chat/completions", methods=['POST'])

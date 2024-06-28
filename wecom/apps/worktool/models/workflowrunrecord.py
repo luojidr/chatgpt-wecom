@@ -1,3 +1,5 @@
+from sqlalchemy.orm import load_only
+
 from wecom.core.database import db, Column, BaseModel
 
 
@@ -20,6 +22,11 @@ class WorkflowRunRecord(db.Model):
 
     data_id = Column(db.Integer, nullable=False, server_default='0')
     general_details_id = Column(db.Integer, nullable=False, server_default='0')
+
+    @classmethod
+    def get_output_by_rid(cls, rid) -> str:
+        obj = cls.query.options(load_only(cls.general_details)).filter_by(rid=rid).first()
+        return obj and obj.general_details
 
 
 

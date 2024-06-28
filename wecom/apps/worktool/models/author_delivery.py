@@ -8,7 +8,7 @@ from typing import Optional, Dict, List
 
 from sqlalchemy import func
 from sqlalchemy.orm import load_only
-from sqlalchemy import Column, Integer, String, Float, Enum, Text
+from sqlalchemy import Column, Integer, String, Float, Enum, Text, SmallInteger
 
 from .workflowrunrecord import WorkflowRunRecord
 from wecom.core.database import db, Column, BaseModel
@@ -18,18 +18,24 @@ class AuthorDelivery(BaseModel):
     __tablename__ = 'wecom_author_delivery'
 
     rid = Column(db.String(100), nullable=False, server_default='')
-    author = Column(db.String(100), nullable=False, server_default='')                  # 作者
-    brief = Column(db.String(100), nullable=False, server_default='')                   # 作者简介
-    work_name = Column(db.String(200), nullable=False, server_default='')               # 作品名
-    theme = Column(db.String(200), nullable=False, server_default='')                   # 作品题材类型
+    author = Column(db.String(100), nullable=False, server_default='')                      # 作者
+    brief = Column(db.String(300), nullable=False, server_default='')                       # 作者简介
+    work_name = Column(db.String(200), nullable=False, server_default='')                   # 作品名
+    theme = Column(db.String(200), nullable=False, server_default='')                       # 作品题材类型
 
-    src_url = Column(db.String(500), nullable=False, server_default='')                 # 原文链接
-    platform = Column(db.String(500), nullable=False, server_default='')                # 平台
-    is_pushed = Column(db.Boolean, nullable=False, default=False, server_default='0')   # 是否推送
-    group_name = Column(db.String(100), nullable=False, server_default='')              # 要推送的群组
-    is_delete = Column(db.Boolean, nullable=False, default=False, server_default='0')   # 是否删除
-    pushed_time = Column(db.DateTime)                                                   # 推送时间
-    finished_time = Column(db.DateTime)                                                 # 数据接收完成时间
+    src_url = Column(db.String(500), nullable=False, server_default='')                     # 原文链接
+    platform = Column(db.String(500), nullable=False, server_default='')                    # 平台
+    is_pushed = Column(db.Boolean, nullable=False, default=False, server_default='0')       # 是否推送
+
+    # 0: 未调用工作流 1：调用工作流成功并执行中 2：工作流执行结束
+    workflow_state = Column(db.SmallInteger, nullable=False, server_default='0')             # 调用工作流是否完成
+
+    group_name = Column(db.String(100), nullable=False, server_default='')                  # 要推送的群组
+    push_date = Column(db.String(10), nullable=False, server_default='')                    # 要推送的日期
+    batch_id = Column(db.String(6), unique=True, nullable=False, server_default='')         # 批次
+    is_delete = Column(db.Boolean, nullable=False, default=False, server_default='0')       # 是否删除
+    pushed_time = Column(db.DateTime)                                                       # 推送时间
+    finished_time = Column(db.DateTime)                                                     # 数据接收完成时间
 
     @classmethod
     def create(cls, **kwargs):
@@ -40,8 +46,7 @@ class AuthorDelivery(BaseModel):
             .filter_by(
                 author=values.get("author"),
                 work_name=values.get("work_name"),
-                group_name=values.get("group_name"),
-                is_delete=False
+                group_name=values.get("group_name")
             )\
             .first()
 
@@ -52,10 +57,6 @@ class AuthorDelivery(BaseModel):
                 setattr(instance, key, val)
 
         instance.finished_time = func.now()
-        if not instance.uniq_id:
-            uniq_id = cls.get_unique_id()
-            instance.uniq_id = uniq_id
-            instance.detail_url = os.environ["TOP_EVALUATION_URL"] + uniq_id
 
         db.session.add(instance)
         db.session.commit()
@@ -67,68 +68,47 @@ class AuthorDelivery(BaseModel):
         return cls.query.filter_by(**kwargs).first()
 
     @classmethod
-    def get_required_author_delivery_list(cls):
-        results = {}
-        push_date = date.today().strftime("%Y-%m-%d")
-        queryset = cls.query.filter_by(push_date=push_date, is_pushed=False, is_delete=False).all()
+    def get_more_authors_by_batch_id(cls, batch_id):
+        return cls.query.filter_by(batch_id=batch_id).order_by(cls.id.asc()).offset(1).all()
 
-        # for group_name, objects in groupby(queryset, key=attrgetter("group_name")):
+    @classmethod
+    def get_running_rids_by_workflow_state(cls, workflow_state):
+        queryset = cls.query.options(load_only(cls.rid)).filter_by(workflow_state=workflow_state).all()
+        return list({obj.rid for obj in queryset})
+
+    @classmethod
+    def get_required_top_author_delivery_list(cls):
+        results = {}
+        kwargs = dict(
+            workflow_state=2, is_pushed=False, is_delete=False,
+            push_date=date.today().strftime("%Y-%m-%d"),
+        )
+        queryset = cls.query.filter_by(**kwargs).order_by(cls.id.asc()).all()
+
         for obj in queryset:
             results.setdefault(obj.group_name, []).append(obj)
 
         return results
 
     @classmethod
-    def get_output_by_uniq_id(cls, uniq_id):
-        obj = cls.query.filter_by(uniq_id=uniq_id).first()
-        if obj:
-            run_obj = WorkflowRunRecord.query\
-                .options(load_only(WorkflowRunRecord.general_details))\
-                .filter_by(rid=obj.rid)\
-                .first()
-            return run_obj and run_obj.general_details
-
-    @classmethod
-    def get_output_by_workflow_rid(cls, rid):
-        obj = WorkflowRunRecord.query\
-            .options(load_only(WorkflowRunRecord.general_details))\
-            .filter_by(rid=rid)\
-            .first()
-
-        if obj:
-            return obj.general_details
-
-    @classmethod
-    def get_latest_push_date_by_group_name(cls, group_name):
-        objs = cls.query\
-            .options(load_only(cls.push_date))\
-            .filter_by(group_name=group_name)\
-            .order_by(cls.push_date.desc())\
-            .limit(2)\
-            .all()
-
-        if not objs:
-            is_new = True
-            push_date = date.today()
-        else:
-            push_date = datetime.strptime(objs[0].push_date, "%Y-%m-%d").date()
-
-            if len(objs) == 1:
-                is_new = False
-            else:
-                if objs[0].push_date == objs[1].push_date:
-                    is_new = True
-                    push_date = push_date + timedelta(days=1)
-                else:
-                    is_new = False
-
-        return is_new, push_date
-
-    @classmethod
     def update_push_by_ids(cls, ids):
         cls.query.filter(cls.id.in_(ids)).update({"is_pushed": 1, "pushed_time": func.now()})
         db.session.commit()
 
+    @classmethod
+    def update_workflow_by_id(cls, pk, rid, state):
+        cls.query.filter_by(id=pk).update({"workflow_state": state, "rid": rid})
+        db.session.commit()
+
+    @classmethod
+    def update_brief_by_rid(cls, rid, brief, state):
+        cls.query.filter_by(rid=rid).update({"brief": brief, "workflow_state": state})
+        db.session.commit()
+
+    @classmethod
+    def update_rid_by_id(cls, pk, rid):
+        cls.query.filter_by(id=pk).update({"rid": rid})
+        db.session.commit()
 
 
 
