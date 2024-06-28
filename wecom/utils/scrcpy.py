@@ -83,7 +83,7 @@ def autodetect_rebot_reply() -> int:
     sent_timestamp = sent_obj.timestamp if sent_obj else 0
     reply_timestamp = reply_obj.timestamp if reply_obj else 0
 
-    if reply_timestamp - sent_timestamp < default_timeout:
+    if 0 <= reply_timestamp - sent_timestamp < default_timeout:
         return 1
 
     return 2
