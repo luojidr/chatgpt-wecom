@@ -14,6 +14,7 @@ from wecom.apps.worktool.service import chat, render, delivery
 from wecom.utils import scrcpy
 from wecom.utils.log import logger
 from wecom.utils.reply import MessageReply
+from scripts.sync_author_delivery import SyncAuthorRules
 from scripts.sync_script_delivery import SyncScriptDeliveryRules
 
 
@@ -94,6 +95,12 @@ def push_top_author():
 @blueprint.route('/sync_script_delivery', methods=['POST'])
 def sync_script_delivery():
     SyncScriptDeliveryRules().parse_records()
+    return jsonify(msg="sync_script_delivery is ok", status=200, data=None)
+
+
+@blueprint.route('/sync_author_delivery', methods=['POST'])
+def sync_author_delivery():
+    SyncAuthorRules().sync_records()
     return jsonify(msg="sync_script_delivery is ok", status=200, data=None)
 
 
