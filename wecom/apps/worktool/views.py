@@ -54,7 +54,7 @@ def autodetect_rebot_reply():
     return jsonify(msg="autodetect", status=200, data=scrcpy.autodetect_rebot_reply())
 
 
-@blueprint.route("/top_author/fresh")
+@blueprint.route("/top_author/workflow/fresh")
 def fresh_top_author_brief():
     delivery.auto_fresh_top_author_brief()
     return jsonify(msg="autodetect", status=200, data=None)
