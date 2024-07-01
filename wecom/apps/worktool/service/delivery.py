@@ -15,6 +15,12 @@ __all__ = ["DeliveryAuthor", "DeliveryScript"]
 def auto_fresh_top_author_brief():
     pattern = re.compile(r"4\..*?具体亮点.*?：(.*)$", re.M | re.S)
     rid_list = AuthorDelivery.get_running_rids_by_workflow_state(workflow_state=1)
+    none_text_list = [
+        "由于缺乏具体的改编作品信息",
+        "暂无公开信息显示",
+        "暂无具体数据或奖项",
+        "由于缺乏具体的数据、奖项名称等实体信息",
+    ]
 
     for rid in rid_list:
         output_str = WorkflowRunRecord.get_output_by_rid(rid=rid)
@@ -30,7 +36,13 @@ def auto_fresh_top_author_brief():
             if match:
                 brief = match.group(1).strip().lstrip(' -')
                 brief = brief.split("\n", 1)[0].strip()
-                AuthorDelivery.update_brief_by_rid(rid, brief, 2)
+            else:
+                if any([s in text for s in none_text_list]):
+                    brief = "无"
+                else:
+                    continue
+
+            AuthorDelivery.update_brief_by_rid(rid, brief, 2)
 
 
 class DeliveryAuthor:
