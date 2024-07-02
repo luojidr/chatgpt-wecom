@@ -70,7 +70,7 @@ def autodetect_rebot_sent():
 
 
 def autodetect_rebot_reply() -> int:
-    default_timeout = 60
+    default_timeout = 10 * 60
 
     # 找到最近的推送消息
     sent_obj = RebotDetection.get_latest_from_already_sent()
@@ -78,10 +78,17 @@ def autodetect_rebot_reply() -> int:
     if sent_obj is None:
         return 1
 
+    # 几种情况:
+    # 1) 最后一次发送成功, 但是没有回复(3次内)
+    # 2) 最后一次发送失败, 说明机器人没有正常运行
+    # 3) 最后一次发送成功, 也回复成功，但是过了很长时间没有再次发送(机器人可能没有运行)
     if sent_obj.code == 200:
         if sent_obj.reply_times < 3:
             RebotDetection.update_reply_times_by_id(sent_pk=sent_obj.id)
             return 1
+
+        if int(time.time()) - sent_obj.reply_timestamp > default_timeout:
+            return 2
 
     return 2
 
