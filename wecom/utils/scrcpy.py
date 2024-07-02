@@ -1,10 +1,11 @@
 import time
+import traceback
 from datetime import datetime
 
 from faker import Faker
 from pyquery import PyQuery
 from tenacity import retry, stop_after_attempt
-from playwright.sync_api import sync_playwright
+from playwright.sync_api import sync_playwright, Error
 
 from config import settings
 from .reply import MessageReply
@@ -14,46 +15,41 @@ from wecom.apps.worktool.models.rebot import RebotDetection
 
 
 @retry(stop=stop_after_attempt(max_attempt_number=3))
-def is_cloud_phone_connected():
-    is_connected = False
-
-    with sync_playwright() as playwright:
-        browser = playwright.chromium.launch(headless=True)
+def check_cloud_phone_connected():
+    """ 分2步 1) scrcpy-web 正常运行 2) 能够正常连接云手机 """
+    with sync_playwright() as pw:
+        browser = pw.chromium.launch(headless=True)
         content = browser.new_context()
         page = content.new_page()
-        page.goto("http://8.217.15.229:8010/")
-        page.wait_for_timeout(3000)
-        html = page.content()
 
-        document = PyQuery(html)
-        selector = '#goog_device_list #tracker_instance1 .desc-block[data-player-code-name="broadway"] a'
-        text = document(selector).text()
+        try:
+            page.goto("http://8.217.15.229:8010/")
+            page.wait_for_timeout(3000)
+            html = page.content()
 
-        if not text:
-            raise ValueError("可能没有获取到网页内容")
+            document = PyQuery(html)
+            selector = '#goog_device_list #tracker_instance1 .desc-block[data-player-code-name="broadway"] a'
+            text = document(selector).text()
 
-        if text.strip().lower() == "broadway.js":
-            is_connected = True
+            if not text:
+                raise ValueError("可能没有获取到网页内容")
 
-        content.close()
-        browser.close()
+            if text.strip().lower() == "broadway.js":
+                is_connected = True
+        except Error as e1:
+            # scrcpy-web 可能没有呢正常运行(scrcpy-web是 dokcer 会自启动)
+            logger.error("Maybe load url err: %s", e1)
+            return 1
+        except Exception as e2:
+            # 可能没有正常连接云手机
+            logger.error("Maybe other err: %s", e2)
+            logger.error(traceback.format_exc())
+            return 2
+        finally:
+            content.close()
+            browser.close()
 
-    return is_connected
-
-
-def save_rebot_auto_reply(callback_data):
-    message_id = callback_data.get("messageId")
-    success_list = callback_data.get("successList")
-    error_reason = callback_data.get("errorReason")
-
-    if success_list and success_list[0] == settings.WT_ROBOT_DETECTION_RECEIVER:
-        if error_reason is not None and len(error_reason) == 0:
-            obj = RebotDetection.get_by_msg_id(msg_id=message_id, opt_type=RebotType.DETECT_SEND)
-            if obj:
-                RebotDetection.create(
-                    opt_type=RebotType.DETECT_REPLY, text="auto_reply",
-                    batch_seq=obj.batch_seq, msg_id=message_id,
-                )
+    return 0
 
 
 def autodetect_rebot_sent():

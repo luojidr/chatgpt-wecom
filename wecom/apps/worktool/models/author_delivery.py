@@ -33,6 +33,7 @@ class AuthorDelivery(BaseModel):
     group_name = Column(db.String(100), nullable=False, server_default='')                  # 要推送的群组
     push_date = Column(db.String(10), nullable=False, server_default='')                    # 要推送的日期
     batch_id = Column(db.String(6), unique=True, nullable=False, server_default='')         # 批次
+    message_id = Column(db.String(50), unique=True, nullable=False, server_default='')       # 推送消息id
     is_delete = Column(db.Boolean, nullable=False, default=False, server_default='0')       # 是否删除
     pushed_time = Column(db.DateTime)                                                       # 推送时间
     finished_time = Column(db.DateTime)                                                     # 数据接收完成时间
@@ -91,8 +92,13 @@ class AuthorDelivery(BaseModel):
         return results
 
     @classmethod
-    def update_push_by_ids(cls, ids):
-        cls.query.filter(cls.id.in_(ids)).update({"is_pushed": 1, "pushed_time": func.now()})
+    def update_push_state_by_message_id(cls, message_id: str):
+        cls.query.filter_by(message_id=message_id).update(dict(is_pushed=1, pushed_time=func.now()))
+        db.session.commit()
+
+    @classmethod
+    def update_message_id_by_ids(cls, ids, message_id):
+        cls.query.filter(cls.id.in_(ids)).update(dict(message_id=message_id))
         db.session.commit()
 
     @classmethod

@@ -1,5 +1,6 @@
 import re
 import os.path
+import threading
 
 # from flask_login import login_required, login_user
 from flask import render_template
@@ -38,10 +39,20 @@ def check_robot_status():
 
 @blueprint.route("/scrcpy-phone/is_connected")
 def check_connected_to_scrcpy_phone():
-    if scrcpy.is_cloud_phone_connected():
-        return jsonify(msg="connected phone", status=200, data=None)
+    conn_state = scrcpy.check_cloud_phone_connected()
+    if conn_state == 0:
+        status = 200
+        msg = "connected phone is normal"
+    elif conn_state == 1:
+        status = 6001
+        msg = "scrcpy-web is restarting now"
+    elif conn_state == 2:
+        status = 6002
+        msg = "disconnected phone"
+    else:
+        raise ValueError('Not Support')
 
-    return jsonify(msg="disconnected phone", status=6001, data=None)
+    return jsonify(msg=msg, status=status, data=None)
 
 
 @blueprint.route("/rebot/send/autodetect")
@@ -72,23 +83,23 @@ def download(filename):
     return send_from_directory(static_path, filename, as_attachment=True)
 
 
-@blueprint.route("/ai/evaluation/push", methods=["POST"])
-def push_ai_evaluation():
-    is_online = MessageReply().get_rebot_status()
-    if not is_online:
-        return jsonify(msg="rebot is offline", status=5003, data=None)
-
-    delivery.DeliveryScript().push()
-    return jsonify(msg="ok", status=200, data=None)
-
-
-@blueprint.route("/top_author/push", methods=["POST"])
+@blueprint.route("/push", methods=["POST"])
 def push_top_author():
     is_online = MessageReply().get_rebot_status()
     if not is_online:
         return jsonify(msg="rebot is offline", status=5003, data=None)
 
-    delivery.DeliveryAuthor().push()
+    params = request.args
+    push_type = params.get("push_type")
+    assert push_type in ["ai", "top_author"], "推送类型错误"
+
+    if push_type == "ai":
+        target_func = delivery.DeliveryScript().push
+    else:
+        target_func = delivery.DeliveryAuthor().push
+
+    t = threading.Thread(target=target_func)
+    t.start()
     return jsonify(msg="ok", status=200, data=None)
 
 
@@ -112,7 +123,7 @@ def callback_wecom():
 
     data = request.json
     logger.info("callback => data: %s", data)
-    scrcpy.save_rebot_auto_reply(callback_data=data)
+    delivery.WTMessageListener(callback_data=data).listen()
 
     text_type = data.get("textType", 0)
     if text_type != WTTextType.TEXT.value:
