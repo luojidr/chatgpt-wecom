@@ -36,6 +36,9 @@ WT_GROUP_PROMPTS = {
     "剧酷传播/项目二部IP智能推荐群": DEFAULT_SYSTEM_PROMPT,
     "瞰心晴IP智能推荐群": DEFAULT_SYSTEM_PROMPT,
     "张双双团队IP智能推荐群": DEFAULT_SYSTEM_PROMPT,
+    "朱婧团队IP智能推荐群": DEFAULT_SYSTEM_PROMPT,
+    "陈晶晶团队IP智能推荐群": DEFAULT_SYSTEM_PROMPT,
+    "曾金韬团队IP智能推荐群": DEFAULT_SYSTEM_PROMPT,
 }
 
 PUSH_REBOT_TOP_AUTHOR_LIST = list(WT_GROUP_PROMPTS.keys())
