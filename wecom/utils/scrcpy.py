@@ -74,13 +74,14 @@ def autodetect_rebot_reply() -> int:
 
     # 找到最近的推送消息
     sent_obj = RebotDetection.get_latest_from_already_sent()
-    reply_obj = RebotDetection.get_by_msg_id(msg_id=sent_obj.msg_id, opt_type=RebotType.DETECT_REPLY)
 
-    sent_timestamp = sent_obj.timestamp if sent_obj else 0
-    reply_timestamp = reply_obj.timestamp if reply_obj else 0
-
-    if 0 <= reply_timestamp - sent_timestamp < default_timeout:
+    if sent_obj is None:
         return 1
+
+    if sent_obj.code == 200:
+        if sent_obj.reply_times < 3:
+            RebotDetection.update_reply_times_by_id(sent_pk=sent_obj.id)
+            return 1
 
     return 2
 

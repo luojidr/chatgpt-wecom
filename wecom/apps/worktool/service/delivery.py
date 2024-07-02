@@ -167,13 +167,10 @@ class WTMessageListener:
     def listen_auto_reply_to_scrcpy(self):
         """ 监听 scrcpy 的自动回复的消息 """
         message_id = self.message_state["message_id"]
-        obj = RebotDetection.get_by_msg_id(msg_id=message_id, opt_type=RebotType.DETECT_SEND)
+        obj = RebotDetection.get_latest_from_already_sent()
 
         if obj:
-            RebotDetection.create(
-                opt_type=RebotType.DETECT_REPLY, text="auto_reply",
-                batch_seq=obj.batch_seq, msg_id=message_id,
-            )
+            RebotDetection.update_reply_ok_by_id(sent_pk=obj.id)
 
     def listen_external_group_top_author(self):
         """ 监听企微外部群(头部作者推送) """
