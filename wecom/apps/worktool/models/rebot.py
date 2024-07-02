@@ -61,6 +61,6 @@ class RebotDetection(BaseModel):
         db.session.commit()
 
     @classmethod
-    def update_reply_ok_by_id(cls, sent_pk):
-        cls.query.filter_by(id=sent_pk).update({"is_reply_ok": 1})
+    def update_reply_ok_by_msg_id(cls, msg_id):
+        cls.query.filter_by(msg_id=msg_id).update({"is_reply_ok": 1})
         db.session.commit()
