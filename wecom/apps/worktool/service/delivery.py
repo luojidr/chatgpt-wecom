@@ -200,11 +200,12 @@ class WTMessageListener:
                 if success_name in ai_group_names:
                     self.listen_external_group_ai_evaluation()
         else:
-            fail_name = message_state["fail_list"]
+            fail_list = message_state["fail_list"]
             target_func = None
             app = current_app._get_current_object()
 
-            if fail_name:
+            if fail_list:
+                fail_name = fail_list[0]
                 raw_msg = message_state["raw_msg"]
                 reason = message_state["error_reason"]
                 logger.warn("Name: %s ==>> message failed, error_reason: %s, raw_msg: %s", fail_name, reason, raw_msg)
