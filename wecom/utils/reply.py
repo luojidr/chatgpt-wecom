@@ -114,14 +114,16 @@ class MessageReply:
                 at_list = []
             else:
                 title_list = [self.group_remark]
-                received_content = "\n%s" % one_seg
+                receiver = receiver if receiver else "所有人"
+                received_content = "@%s\n%s" % (receiver, one_seg)
+                # received_content = "@所有人\n%s" % one_seg
                 at_list = ['@' + receiver if receiver else "@所有人"]
 
             text_list.append(dict(
                 type=SendType.TEXT.value,
                 titleList=title_list,
                 receivedContent=received_content,
-                atList=at_list
+                # atList=at_list    # send failed
             ))
 
         payload = dict(socketType=2, list=text_list)
