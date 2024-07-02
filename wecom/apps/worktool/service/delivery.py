@@ -156,7 +156,7 @@ class WTMessageListener:
         return dict(
             error_code=error_code, error_reason=error_reason,
             success_list=success_list, message_id=message_id,
-            fail_list=fail_list, raw_msg=self.callback_data.get("rawMsg", {})
+            fail_list=fail_list, raw_msg=self.callback_data.get("rawMsg")
         )
 
     def listen_auto_reply_to_scrcpy(self):
@@ -195,20 +195,21 @@ class WTMessageListener:
                 if success_name in ai_group_names:
                     self.listen_external_group_ai_evaluation()
         else:
-            raw_msg = message_state["raw_msg"]
-            reason = message_state["error_reason"]
-            fail_name = message_state["fail_list"][0]
-            logger.warn("Name: %s ==>> message failed, error_reason: %s, raw_msg: %s", fail_name, reason, raw_msg)
+            fail_name = message_state["fail_list"]
 
-            logger.warn("注意: 对于发送失败的外部群信息，重新发送......")
+            if fail_name:
+                raw_msg = message_state["raw_msg"]
+                reason = message_state["error_reason"]
+                logger.warn("Name: %s ==>> message failed, error_reason: %s, raw_msg: %s", fail_name, reason, raw_msg)
+                logger.warn("注意: 对于发送失败的外部群信息，重新发送......")
 
-            if fail_name in prompts.PUSH_REBOT_TOP_AUTHOR_LIST:
-                t = threading.Thread(target=DeliveryAuthor().push)
-                t.start()
-            else:
-                if fail_name in ai_group_names:
-                    t = threading.Thread(target=DeliveryScript().push)
+                if fail_name in prompts.PUSH_REBOT_TOP_AUTHOR_LIST:
+                    t = threading.Thread(target=DeliveryAuthor().push)
                     t.start()
+                else:
+                    if fail_name in ai_group_names:
+                        t = threading.Thread(target=DeliveryScript().push)
+                        t.start()
 
 
 
