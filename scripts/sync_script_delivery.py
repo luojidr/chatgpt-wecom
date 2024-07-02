@@ -2,22 +2,22 @@ import json
 import re
 import os.path
 import itertools
-from operator import itemgetter, attrgetter
-from datetime import timedelta, datetime
-from urllib.parse import urlparse, parse_qs
+from operator import itemgetter
+from datetime import timedelta
 
 from sqlalchemy.orm import load_only
 
 # 单脚本执行时
 # os.environ["APP_ENV"] = "PROD"
 
+from scripts.base import RulesBase
 from config import settings
 from wecom.utils.log import logger
 from wecom.apps.worktool.models.script_delivery import ScriptDelivery, OutputDelivery
 from wecom.apps.worktool.models.workflowrunrecord import WorkflowRunRecord
 
 
-class SyncScriptDeliveryRules:
+class SyncScriptDeliveryRules(RulesBase):
     """ 同步规则：
     1) 推送团队: team1, team2, team2, ......
     2) 按照每个团队的规则进行数据匹配：如 team1 匹配数据 n1 条，team1 匹配数据 n2 条；每个团队的数据可能有交集。
@@ -32,15 +32,6 @@ class SyncScriptDeliveryRules:
         self.min_ai_score = 8.5
 
         logger.info("SyncScriptDelivery => init workflow_id: %s, user_id: %s", self.workflow_id, self.user_id)
-
-    @staticmethod
-    def parse_url_params(url):
-        parsed_url = urlparse(url)  # 解析 URL
-        fragment = parsed_url.fragment  # 获取 URL 的 fragment 部分
-        fragment_params = urlparse(f"//{fragment}")  # 解析 fragment 中的参数
-        query_params = parse_qs(fragment_params.query)  # 获取查询参数
-
-        return query_params
 
     @staticmethod
     def get_which_teams_from_input(input_fields):
@@ -158,24 +149,6 @@ class SyncScriptDeliveryRules:
 
         return queryset
 
-    def _get_platform(self, scr_url):
-        exclude_list = ["www", "com", "cn"]
-        domain_keywords = {
-            "番茄": "fanqie",
-            "起点": "qidian",
-            "豆瓣": "douban"
-        }
-
-        ret = urlparse(scr_url)
-        hostname = ret.hostname or ""
-        domain_list = [s for s in hostname.split(".") if s and s not in exclude_list]
-
-        for platform, keyword in domain_keywords.items():
-            if any(keyword in d for d in domain_list):
-                return platform
-
-        return ""
-
     def save_db(self, ok_results):
         step = 2
         ok_results.sort(key=itemgetter("group_name"))  # 按组名分组排序
@@ -228,7 +201,7 @@ class SyncScriptDeliveryRules:
                     OutputDelivery.create(rid=rid)
                     ScriptDelivery.create(**each_item)
 
-    def parse_records(self):
+    def sync_records(self):
         logger.info('SyncScriptDelivery.parse_records => 【开始】同步數據')
 
         ok_results = []
@@ -274,5 +247,5 @@ if __name__ == "__main__":
         SyncScriptDeliveryRules(
             workflow_id="5a5972201eb4432ca9dfb434d3b4a931",
             user_id="86ab55af067944c196c2e6bc751b94f8"
-        ).parse_records()
+        ).sync_records()
 

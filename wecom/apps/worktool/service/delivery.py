@@ -13,7 +13,7 @@ __all__ = ["DeliveryAuthor", "DeliveryScript"]
 
 
 def auto_fresh_top_author_brief():
-    pattern = re.compile(r"4\..*?具体亮点.*?：(.*)$", re.M | re.S)
+    pattern = re.compile(r"4、.*?一句话提炼.*?市场表现等的具体亮点.*?：(.*)$", re.M | re.S)
     rid_list = AuthorDelivery.get_running_rids_by_workflow_state(workflow_state=1)
     none_text_list = [
         "由于缺乏具体的改编作品信息",
@@ -82,7 +82,8 @@ class DeliveryAuthor:
             else:
                 content = AuthorContentMore(templates, batch_id=batch_id).get_layout_content()
 
-            push_kw = dict(content=content, receiver="所有人", max_length=700)
+            # push_kw = dict(content=content, receiver="所有人", max_length=700)
+            push_kw = dict(content=content, max_length=700)
             result = MessageReply(group_remark=group_name).simple_push(**push_kw)
 
             if result.get("code") == 200 and result.get("data"):
@@ -125,6 +126,7 @@ class DeliveryScript:
                 push_kw = dict(content=content, receiver="所有人", max_length=700)
                 result = MessageReply(group_remark=group_name).simple_push(**push_kw)
 
+                # 此处不能判断一定推送成功
                 # eg: {'code': 200, 'message': '操作成功', 'data': True}
                 if result.get("code") == 200 and result.get("data"):
                     ScriptDelivery.update_push(uniq_ids)

@@ -94,7 +94,7 @@ def push_top_author():
 
 @blueprint.route('/sync_script_delivery', methods=['POST'])
 def sync_script_delivery():
-    SyncScriptDeliveryRules().parse_records()
+    SyncScriptDeliveryRules().sync_records()
     return jsonify(msg="sync_script_delivery is ok", status=200, data=None)
 
 

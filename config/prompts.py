@@ -8,10 +8,10 @@ DEFAULT_CHAT_PROMPT = """
 """
 
 WT_GROUP_PROMPTS = {
+    "机器人测试群": DEFAULT_SYSTEM_PROMPT,
     "宽厚IP智能推荐群": DEFAULT_SYSTEM_PROMPT,
     "创意发现中心IP智能推荐群": DEFAULT_SYSTEM_PROMPT,
     "项目创投部IP智能推荐群": DEFAULT_SYSTEM_PROMPT,
-    "机器人测试群": DEFAULT_SYSTEM_PROMPT,
     "IP挖掘团队IP智能推荐群": DEFAULT_SYSTEM_PROMPT,
     "创意资源拓展中心IP智能推荐群": DEFAULT_SYSTEM_PROMPT,
     "剧芯文化IP智能推荐群": DEFAULT_SYSTEM_PROMPT,
@@ -26,15 +26,16 @@ WT_GROUP_PROMPTS = {
     "好剧影视IP智能推荐群": DEFAULT_SYSTEM_PROMPT,
     "辛迪加影视IP智能推荐群": DEFAULT_SYSTEM_PROMPT,
     "梦见森林工作室IP智能推荐群": DEFAULT_SYSTEM_PROMPT,
-    "剧酷传播项目四部IP智能推荐群": DEFAULT_SYSTEM_PROMPT,
     "锦鲤工作室IP智能推荐群": DEFAULT_SYSTEM_PROMPT,
-    "南京公司IP智能推荐群": DEFAULT_SYSTEM_PROMPT,
+    "有戏工作室IP智能推荐群": DEFAULT_SYSTEM_PROMPT,
     "新天地工作室IP智能推荐群": DEFAULT_SYSTEM_PROMPT,
-    "创意发现部IP智能推荐群": DEFAULT_SYSTEM_PROMPT,
     "剧可爱IP智能推荐群": DEFAULT_SYSTEM_PROMPT,
     "剧酷传播/项目一部IP智能推荐群": DEFAULT_SYSTEM_PROMPT,
     "羿格工作室IP智能推荐群": DEFAULT_SYSTEM_PROMPT,
     "李杜团队IP智能推荐群": DEFAULT_SYSTEM_PROMPT,
     "剧酷传播/项目二部IP智能推荐群": DEFAULT_SYSTEM_PROMPT,
     "瞰心晴IP智能推荐群": DEFAULT_SYSTEM_PROMPT,
+    "张双双团队IP智能推荐群": DEFAULT_SYSTEM_PROMPT,
 }
+
+PUSH_REBOT_TOP_AUTHOR_LIST = list(WT_GROUP_PROMPTS.keys())

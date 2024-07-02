@@ -1,52 +1,36 @@
 import json
 import string
 import random
-import os.path
-import itertools
 import traceback
-from operator import itemgetter, attrgetter
-from datetime import timedelta, datetime, date
-from urllib.parse import urlparse, parse_qs
+from datetime import datetime, date
+
 
 import requests
 from sqlalchemy import text
 from sqlalchemy.orm import load_only
 
-from config import settings
+from scripts.base import RulesBase
+from config import settings, prompts
 from wecom.utils.log import logger
 from wecom.apps.worktool.models.workflow import Workflow
+from wecom.apps.worktool.models.workflowrunrecord import WorkflowRunRecord
 from wecom.apps.worktool.models.top_author import TopAuthor, db
 from wecom.apps.worktool.models.author_delivery import AuthorDelivery
 
 
-class SyncAuthorRules:
+class SyncAuthorRules(RulesBase):
     def __init__(self):
-        self.max_seconds = 60 * 60 * 24
+        self.max_seconds = 1 * 24 * 60 * 60
 
-        self.workflow_id = "016bd4ad7a964addb2a91a633ab178ad"
+        self.workflow_id = "a77a8cfdf01e4ebcb57d75719e2988c9"
         self.user_id = "86ab55af067944c196c2e6bc751b94f8"
 
-    def _get_platform(self, scr_url):
-        exclude_list = ["www", "com", "cn", "net"]
-        domain_keywords = {
-            "番茄": "fanqie",
-            "起点": "qidian",
-            "豆瓣": "douban",
-            "晋江": "jjwxc",
-        }
-
-        ret = urlparse(scr_url)
-        hostname = ret.hostname or ""
-        domain_list = [s for s in hostname.split(".") if s and s not in exclude_list]
-
-        for platform, keyword in domain_keywords.items():
-            if any(keyword in d for d in domain_list):
-                return platform
-
-        return ""
-
     def trigger_ai_workflow(self, author, platform):
-        workflow_obj = Workflow.query.options(load_only(Workflow.data)).filter_by(wid=self.workflow_id).first()
+        workflow_obj = Workflow.query\
+            .options(load_only(Workflow.data))\
+            .filter_by(wid=self.workflow_id, user_id=self.user_id)\
+            .first()
+
         result_proxy = db.session.execute(
             text("SELECT data FROM setting ORDER BY ID DESC LIMIT 1"),
             bind_arguments=dict(bind=db.get_engine("workflow"))
@@ -59,7 +43,7 @@ class SyncAuthorRules:
                 "user_id": self.user_id,
                 "path": "workflow__run",
                 "parameter": {
-                    "data": {"setting": _setting,},
+                    "data": {"setting": _setting},
                     "wid": self.workflow_id,
                 }
             }
@@ -87,6 +71,19 @@ class SyncAuthorRules:
         else:
             logger.error(f"workflow_id: {self.workflow_id} not found")
 
+    def _get_workflow_run_record_id(self, author, platform, push_date: str):
+        instance = AuthorDelivery.get_object(author=author, platform=platform, push_date=push_date)
+        if instance is None or not instance.rid:
+            return False
+
+        rid = instance.rid
+        run_record = WorkflowRunRecord.query\
+            .options(load_only(WorkflowRunRecord.rid))\
+            .filter_by(rid=rid, user_id=self.user_id, workflow_id=self.workflow_id)\
+            .first()
+
+        return run_record and run_record.rid
+
     def get_batch_id(self, group_name: str, push_date: str, k: int = 6):
         obj = AuthorDelivery.query\
             .options(load_only(AuthorDelivery.batch_id))\
@@ -99,14 +96,10 @@ class SyncAuthorRules:
 
     def save_db(self, ok_results: list):
         for item in ok_results:
-            for group_item in settings.PUSH_REBOT_GROUP_MAPPING:
-                group_name = group_item["name"]
+            for group_name in prompts.PUSH_REBOT_TOP_AUTHOR_LIST:
                 author = item["author"]
                 work_name = item["work_name"]
                 platform = item["platform"]
-
-                # 过滤, 并且相同的工作流只执行一次
-                instance = AuthorDelivery.get_object(author=author, platform=platform)
                 group_instance = AuthorDelivery.get_object(author=author, work_name=work_name, group_name=group_name)
 
                 # 获取batch_id
@@ -123,28 +116,29 @@ class SyncAuthorRules:
                         push_date=push_date, batch_id=batch_id
                     )
 
-                if group_instance.workflow_state == 0:
+                # 过滤, 并且相同的工作流只执行一次(注意：是同用户下的具体工作流的执行记录)
+                rid = self._get_workflow_run_record_id(author, platform, push_date)
+                if not rid:
                     # 触发工作流
-                    if instance is None or not instance.rid:
-                        rid = self.trigger_ai_workflow(item["author"], platform)
-                        rid = rid or 0
-                    else:
-                        rid = instance.rid or 0
+                    rid = self.trigger_ai_workflow(author, platform)
 
+                if rid:
                     AuthorDelivery.update_workflow_by_id(group_instance.id, rid=rid, state=1)
 
-    def sync_records(self):
+    def sync_records(self, start_dt: str = None, end_dt: str = None):
         logger.info('SyncAuthorRules.sync_records => 【开始】同步數據')
 
         ok_results = []
-        today = date.today()
-        now_dt = datetime(year=today.year, month=today.month, day=today.day)
-        queryset = TopAuthor.query\
-            .filter(
-                TopAuthor.create_time >= now_dt,
-                TopAuthor.create_time <= now_dt.replace(hour=23, minute=59, second=59),
-            )\
-            .all()
+
+        if not start_dt and not end_dt:
+            today = date.today()
+            start_dt = datetime(year=today.year, month=today.month, day=today.day)
+            end_dt = start_dt.replace(hour=23, minute=59, second=59)
+        else:
+            start_dt = datetime.strptime(start_dt, "%Y-%m-%d %H:%M:%S")
+            end_dt = datetime.strptime(end_dt, "%Y-%m-%d %H:%M:%S")
+
+        queryset = TopAuthor.query.filter(TopAuthor.create_time >= start_dt, TopAuthor.create_time <= end_dt).all()
 
         for record in queryset:
             author = record.author_name
@@ -153,12 +147,12 @@ class SyncAuthorRules:
             issued_time = record.issued_time.strip() or "1979-01-01 00:00:00"
             issued_dt = datetime.strptime(issued_time, "%Y-%m-%d %H:%M:%S")
 
-            if record.word_count.strip() == "0" or (datetime.now() - issued_dt).total_seconds() <= self.max_seconds:
-                ok_results.append(dict(
-                    author=author, work_name=work_name,
-                    brief="", theme=record.books_type,
-                    src_url=record.author_url, platform=self._get_platform(record.author_url),
-                ))
+            # if record.word_count.strip() == "0" or (datetime.now() - issued_dt).total_seconds() <= self.max_seconds:
+            ok_results.append(dict(
+                author=author, work_name=work_name,
+                brief="", theme=record.books_type,
+                src_url=record.author_url, platform=self._get_platform(record.author_url),
+            ))
 
         self.save_db(ok_results)
         logger.info('SyncAuthorRules.sync_records => 【結束】同步數據')

@@ -65,7 +65,7 @@ class AuthorDelivery(BaseModel):
 
     @classmethod
     def get_object(cls, **kwargs):
-        return cls.query.filter_by(**kwargs).first()
+        return cls.query.filter_by(**kwargs).order_by(cls.id.asc()).first()
 
     @classmethod
     def get_more_authors_by_batch_id(cls, batch_id):

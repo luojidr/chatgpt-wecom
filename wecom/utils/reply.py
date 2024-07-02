@@ -115,7 +115,7 @@ class MessageReply:
             else:
                 title_list = [self.group_remark]
                 received_content = "\n%s" % one_seg
-                at_list = [receiver if receiver else "所有人"]
+                at_list = ['@' + receiver if receiver else "@所有人"]
 
             text_list.append(dict(
                 type=SendType.TEXT.value,
