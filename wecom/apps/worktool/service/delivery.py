@@ -4,6 +4,8 @@ import time
 import random
 import threading
 
+from flask import current_app
+
 from config import settings, prompts
 from wecom.utils.reply import MessageReply
 from wecom.apps.worktool.models.workflowrunrecord import WorkflowRunRecord
@@ -78,25 +80,27 @@ class DeliveryAuthor:
 
         return group_data
 
-    def push(self):
-        group_data = self.get_templates()
-        for group_name, push_dict in group_data.items():
-            ids = push_dict["ids"]
-            batch_id = push_dict["batch_id"]
-            templates = push_dict["templates"]
+    def push(self, app, incr: bool = False):
+        with app.app_context():
+            group_data = self.get_templates()
 
-            if len(templates) <= 2:
-                content = AuthorContentCouple(templates).get_layout_content()
-            else:
-                content = AuthorContentMore(templates, batch_id=batch_id).get_layout_content()
+            for group_name, push_dict in group_data.items():
+                ids = push_dict["ids"]
+                batch_id = push_dict["batch_id"]
+                templates = push_dict["templates"]
 
-            # push_kw = dict(content=content, receiver="所有人", max_length=700)
-            push_kw = dict(content=content, max_length=700)
-            result = MessageReply(group_remark=group_name).simple_push(**push_kw)
+                if len(templates) <= 2:
+                    content = AuthorContentCouple(templates).get_layout_content()
+                else:
+                    content = AuthorContentMore(templates, batch_id=batch_id).get_layout_content()
 
-            if result.get("code") == 200 and result.get("data"):
-                AuthorDelivery.update_message_id_by_ids(ids, result.get("data") or "")
-                time.sleep(random.randint(5, 10))
+                # push_kw = dict(content=content, receiver="所有人", max_length=700)
+                push_kw = dict(content=content, max_length=700)
+                result = MessageReply(group_remark=group_name).simple_push(**push_kw)
+
+                if result.get("code") == 200 and result.get("data"):
+                    AuthorDelivery.update_message_id_by_ids(ids, result.get("data") or "", incr=incr)
+                    time.sleep(random.randint(5, 10))
 
 
 class DeliveryScript:
@@ -123,22 +127,23 @@ class DeliveryScript:
 
         return group_data
 
-    def push(self):
-        group_data = self.get_templates()
+    def push(self, app, incr: bool = False):
+        with app.app_context():
+            group_data = self.get_templates()
 
-        for group_name, push_dict in group_data.items():
-            uniq_ids = push_dict.get("uniq_ids", [])
-            templates = push_dict.get("templates", [])
+            for group_name, push_dict in group_data.items():
+                uniq_ids = push_dict.get("uniq_ids", [])
+                templates = push_dict.get("templates", [])
 
-            if uniq_ids:
-                content = TopAuthorNewWorkContent(templates).get_layout_content()
-                push_kw = dict(content=content, receiver="所有人", max_length=700)
-                result = MessageReply(group_remark=group_name).simple_push(**push_kw)
+                if uniq_ids:
+                    content = TopAuthorNewWorkContent(templates).get_layout_content()
+                    push_kw = dict(content=content, receiver="所有人", max_length=700)
+                    result = MessageReply(group_remark=group_name).simple_push(**push_kw)
 
-                # eg: {'code': 200, 'message': '操作成功', 'data': True}
-                if result.get("code") == 200 and result.get("data"):
-                    ScriptDelivery.update_message_id_by_uniq_ids(uniq_ids, result.get("data") or "")
-                    time.sleep(random.randint(5, 10))
+                    # eg: {'code': 200, 'message': '操作成功', 'data': True}
+                    if result.get("code") == 200 and result.get("data"):
+                        ScriptDelivery.update_message_id_by_uniq_ids(uniq_ids, result.get("data") or "", incr=incr)
+                        time.sleep(random.randint(5, 10))
 
 
 class WTMessageListener:
@@ -196,6 +201,8 @@ class WTMessageListener:
                     self.listen_external_group_ai_evaluation()
         else:
             fail_name = message_state["fail_list"]
+            target_func = None
+            app = current_app._get_current_object()
 
             if fail_name:
                 raw_msg = message_state["raw_msg"]
@@ -204,13 +211,14 @@ class WTMessageListener:
                 logger.warn("注意: 对于发送失败的外部群信息，重新发送......")
 
                 if fail_name in prompts.PUSH_REBOT_TOP_AUTHOR_LIST:
-                    t = threading.Thread(target=DeliveryAuthor().push)
-                    t.start()
+                    target_func = DeliveryAuthor().push
                 else:
                     if fail_name in ai_group_names:
-                        t = threading.Thread(target=DeliveryScript().push)
-                        t.start()
+                        target_func = DeliveryScript().push
 
+                if target_func:
+                    t = threading.Thread(target=target_func, args=(app, True))
+                    t.start()
 
 
 

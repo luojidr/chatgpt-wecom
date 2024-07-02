@@ -33,8 +33,9 @@ class AuthorDelivery(BaseModel):
     group_name = Column(db.String(100), nullable=False, server_default='')                  # 要推送的群组
     push_date = Column(db.String(10), nullable=False, server_default='')                    # 要推送的日期
     batch_id = Column(db.String(6), unique=True, nullable=False, server_default='')         # 批次
-    message_id = Column(db.String(50), unique=True, nullable=False, server_default='')       # 推送消息id
+    message_id = Column(db.String(50), unique=True, nullable=False, server_default='')      # 推送消息id
     is_delete = Column(db.Boolean, nullable=False, default=False, server_default='0')       # 是否删除
+    retry_times = Column(db.Integer, nullable=False, default=0, server_default='0')         # 重试次数
     pushed_time = Column(db.DateTime)                                                       # 推送时间
     finished_time = Column(db.DateTime)                                                     # 数据接收完成时间
 
@@ -84,7 +85,7 @@ class AuthorDelivery(BaseModel):
             workflow_state=2, is_pushed=False, is_delete=False,
             push_date=date.today().strftime("%Y-%m-%d"),
         )
-        queryset = cls.query.filter_by(**kwargs).order_by(cls.id.asc()).all()
+        queryset = cls.query.filter_by(**kwargs).filter(cls.retry_times < 4).order_by(cls.id.asc()).all()
 
         for obj in queryset:
             results.setdefault(obj.group_name, []).append(obj)
@@ -97,8 +98,10 @@ class AuthorDelivery(BaseModel):
         db.session.commit()
 
     @classmethod
-    def update_message_id_by_ids(cls, ids, message_id):
+    def update_message_id_by_ids(cls, ids, message_id, incr: bool = False):
         cls.query.filter(cls.id.in_(ids)).update(dict(message_id=message_id))
+        if incr:
+            cls.query.filter(cls.id.in_(ids)).update({cls.retry_times: cls.retry_times + 1}, synchronize_session=False)
         db.session.commit()
 
     @classmethod

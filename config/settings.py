@@ -44,6 +44,7 @@ SQLALCHEMY_BINDS = {
     "workflow": env.str("WORKFLOW_DATABASE_URL"),
     "novel_crawler": env.str("CRAWLER_DATABASE_URL"),
 }
+SQLALCHEMY_ECHO = DEBUG
 
 TIME_ZONE = None
 

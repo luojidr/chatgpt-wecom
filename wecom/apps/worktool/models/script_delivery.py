@@ -66,6 +66,7 @@ class ScriptDelivery(BaseModel):
     group_name = Column(db.String(100), nullable=False, server_default='')              # 要推送的群组
     push_date = Column(db.String(10), nullable=False, server_default='')                # 要推送的日期
     message_id = Column(db.String(50), unique=True, nullable=False, server_default='')  # 推送消息id
+    retry_times = Column(db.Integer, nullable=False, default=0, server_default='0')     # 推送失败尝试次数
     is_delete = Column(db.Boolean, nullable=False, default=False, server_default='0')   # 是否删除
     pushed_time = Column(db.DateTime)                                                   # 推送时间
     finished_time = Column(db.DateTime)                                                 # 数据接收完成时间
@@ -124,7 +125,10 @@ class ScriptDelivery(BaseModel):
     def get_required_script_delivery_list(cls):
         results = {}
         push_date = date.today().strftime("%Y-%m-%d")
-        queryset = cls.query.filter_by(push_date=push_date, is_pushed=False, is_delete=False).all()
+        queryset = cls.query\
+            .filter_by(push_date=push_date, is_pushed=False, is_delete=False)\
+            .filter(cls.retry_times < 4)\
+            .all()
 
         # for group_name, objects in groupby(queryset, key=attrgetter("group_name")):
         for obj in queryset:
@@ -184,8 +188,10 @@ class ScriptDelivery(BaseModel):
         db.session.commit()
 
     @classmethod
-    def update_message_id_by_uniq_ids(cls, uniq_ids: List[str], message_id: str):
+    def update_message_id_by_uniq_ids(cls, uniq_ids: List[str], message_id: str, incr: bool = False):
         cls.query.filter(cls.uniq_id.in_(uniq_ids)).update(dict(message_id=message_id))
+        if incr:
+            cls.query.filter(cls.uniq_id.in_(uniq_ids)).update({cls.retry_times: cls.retry_times + 1}, synchronize_session=False)
         db.session.commit()
 
 

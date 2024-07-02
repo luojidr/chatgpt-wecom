@@ -7,6 +7,7 @@ from flask import render_template
 from flask import send_from_directory
 from flask import Blueprint, request, jsonify
 from flask import Response, stream_with_context
+from flask import current_app
 # from flask_security import login_required
 
 from config import settings
@@ -98,7 +99,7 @@ def push_top_author():
     else:
         target_func = delivery.DeliveryAuthor().push
 
-    t = threading.Thread(target=target_func)
+    t = threading.Thread(target=target_func, args=(current_app._get_current_object(), ))
     t.start()
     return jsonify(msg="ok", status=200, data=None)
 
