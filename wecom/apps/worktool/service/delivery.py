@@ -164,20 +164,21 @@ class WTMessageListener:
             fail_list=fail_list, raw_msg=self.callback_data.get("rawMsg")
         )
 
+    @property
+    def message_id(self):
+        return self.message_state["message_id"]
+
     def listen_auto_reply_to_scrcpy(self):
         """ 监听 scrcpy 的自动回复的消息 """
-        message_id = self.message_state["message_id"]
-        RebotDetection.update_reply_ok_by_msg_id(msg_id=message_id)
+        RebotDetection.update_reply_ok_by_msg_id(msg_id=self.message_id)
 
     def listen_external_group_top_author(self):
         """ 监听企微外部群(头部作者推送) """
-        message_id = self.message_state["message_id"]
-        AuthorDelivery.update_push_state_by_message_id(message_id)
+        AuthorDelivery.update_push_state_by_message_id(self.message_id)
 
     def listen_external_group_ai_evaluation(self):
         """ 监听企微外部群(ai评分推送) """
-        message_id = self.message_state["message_id"]
-        ScriptDelivery.update_push_state_by_message_id(message_id)
+        ScriptDelivery.update_push_state_by_message_id(self.message_id)
 
     def listen(self):
         message_state = self.message_state
@@ -185,6 +186,7 @@ class WTMessageListener:
 
         if message_state["error_code"] == 0:
             success_name = message_state["success_list"][0]
+            logger.warn("恭喜，群：[%s] 发送消息成功，消息ID: %s", success_name, self.message_id)
 
             if success_name == settings.WT_ROBOT_DETECTION_RECEIVER:
                 self.listen_auto_reply_to_scrcpy()
@@ -194,15 +196,14 @@ class WTMessageListener:
                 if success_name in ai_group_names:
                     self.listen_external_group_ai_evaluation()
         else:
-            fail_list = message_state["fail_list"]
             target_func = None
+            fail_list = message_state["fail_list"]
             app = current_app._get_current_object()
 
             if fail_list:
                 fail_name = fail_list[0]
-                raw_msg = message_state["raw_msg"]
                 reason = message_state["error_reason"]
-                logger.warn("Name: %s ==>> message failed, error_reason: %s, raw_msg: %s", fail_name, reason, raw_msg)
+                logger.warn("哎吆，群: [%s] 发送消息失败, 原因: %s, 消息ID: %s", fail_name, reason, self.message_id)
                 logger.warn("注意: 对于发送失败的外部群信息，重新发送......")
 
                 if fail_name in prompts.PUSH_REBOT_TOP_AUTHOR_LIST:
