@@ -110,6 +110,7 @@ def sync_delivery_data():
     params = request.args
     sync_type = params.get("sync_type")
     assert sync_type in ["ai", "top_author"], "同步数据类型错误"
+    logger.info("sync_delivery_data => path: %s, params: %s", request.path, params)
 
     if sync_type == "ai":
         SyncScriptDeliveryRules().sync_records()
