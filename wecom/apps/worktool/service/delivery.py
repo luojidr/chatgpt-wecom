@@ -42,24 +42,30 @@ def auto_fresh_top_author_brief():
             template = output_nodes[0]["data"]["template"]
             text = template["text"]["value"]
 
-            match = pattern.search(text)
-            if match:
-                brief = match.group(1).strip().lstrip(' -')
-                brief = brief.split("\n", 1)[0].strip()
+            if any([s in text for s in none_text_list]):
+                upt_value = dict(rid="", brief="", is_delete=True, workflow_state=2)
             else:
-                if any([s in text for s in none_text_list]):
-                    brief = "无"
-                else:
-                    continue
+                match = pattern.search(text)
 
-            AuthorDelivery.update_brief_by_rid(rid, brief, 2)
+                if match:
+                    brief = match.group(1).strip().lstrip(' -')
+                    brief = brief.split("\n", 1)[0].strip()
+
+                    upt_value = dict(brief=brief, is_delete=False, workflow_state=2)
+                else:
+                    upt_value = dict(rid="", brief="", is_delete=True, workflow_state=2)
+
+            AuthorDelivery.update_value_by_rid(rid, upt_value)
 
 
 class DeliveryAuthor:
     """ 头部作者开新坑 """
+    def __init__(self, group_name: str = None):
+        self._group_name = group_name
+
     def get_templates(self):
         group_data = {}
-        results = AuthorDelivery.get_required_top_author_delivery_list()
+        results = AuthorDelivery.get_required_top_author_delivery_list(self._group_name)
 
         for group_name, objects in results.items():
             push_dict = group_data.setdefault(group_name, {})
@@ -81,6 +87,8 @@ class DeliveryAuthor:
         return group_data
 
     def push(self, app, incr: bool = False):
+        time.sleep(random.randint(4, 10))
+
         with app.app_context():
             group_data = self.get_templates()
 
@@ -104,9 +112,13 @@ class DeliveryAuthor:
 
 
 class DeliveryScript:
+    """ ai评分 """
+    def __init__(self, group_name: str = None):
+        self._group_name = group_name
+
     def get_templates(self):
         group_data = {}
-        results = ScriptDelivery.get_required_script_delivery_list()
+        results = ScriptDelivery.get_required_script_delivery_list(self._group_name)
 
         for group_name, objects in results.items():
             push_dict = group_data.setdefault(group_name, {})
@@ -127,7 +139,9 @@ class DeliveryScript:
 
         return group_data
 
-    def push(self, app, incr: bool = False):
+    def push(self, app, g_name: str = None, incr: bool = False):
+        time.sleep(random.randint(4, 10))
+
         with app.app_context():
             group_data = self.get_templates()
 
@@ -203,16 +217,18 @@ class WTMessageListener:
             if fail_list:
                 fail_name = fail_list[0]
                 reason = message_state["error_reason"]
-                logger.warn("哎吆，群: [%s] 发送消息失败, 原因: %s, 消息ID: %s", fail_name, reason, self.message_id)
-                logger.warn("注意: 对于发送失败的外部群信息，重新发送......")
 
                 if fail_name in prompts.PUSH_REBOT_TOP_AUTHOR_LIST:
-                    target_func = DeliveryAuthor().push
+                    target_func = DeliveryAuthor(group_name=fail_name).push
                 else:
                     if fail_name in ai_group_names:
-                        target_func = DeliveryScript().push
+                        target_func = DeliveryScript(group_name=fail_name).push
 
                 if target_func:
+                    logger.warn("哎吆，群: [%s] 发送消息失败, 原因: %s, 消息ID: %s", fail_name, reason, self.message_id)
+                    logger.warn("注意: 对于发送失败的外部群信息，重新发送......\n\n")
+
+                    # 只对自己的群组进行补偿推送
                     t = threading.Thread(target=target_func, args=(app, True))
                     t.start()
 

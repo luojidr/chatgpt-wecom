@@ -25,7 +25,7 @@ class WorkflowRunRecord(db.Model):
 
     @classmethod
     def get_output_by_rid(cls, rid) -> str:
-        obj = cls.query.options(load_only(cls.general_details)).filter_by(rid=rid).first()
+        obj = cls.query.options(load_only(cls.general_details)).filter_by(rid=rid, status="FINISHED").first()
         return obj and obj.general_details
 
 

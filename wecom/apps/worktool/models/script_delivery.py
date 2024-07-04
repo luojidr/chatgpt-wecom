@@ -57,7 +57,7 @@ class ScriptDelivery(BaseModel):
     core_highlight = Column(db.String(500), nullable=False, server_default='')          # 核心亮点
     core_idea = Column(db.String(500), nullable=False, server_default='')               # 核心创意
     pit_date = Column(db.String(20), nullable=False, server_default='')                 # 开坑时间
-    ai_score = Column(db.String(20), nullable=False, server_default='')                  # AI评分
+    ai_score = Column(db.Float, nullable=False, server_default='')                      # AI评分
     detail_url = Column(db.String(500), nullable=False, server_default='')              # 评估详情见链接
     src_url = Column(db.String(500), nullable=False, server_default='')                 # 原文链接
     platform = Column(db.String(500), nullable=False, server_default='')                # 平台
@@ -65,6 +65,7 @@ class ScriptDelivery(BaseModel):
     is_pushed = Column(db.Boolean, nullable=False, default=False, server_default='0')   # 是否推送
     group_name = Column(db.String(100), nullable=False, server_default='')              # 要推送的群组
     push_date = Column(db.String(10), nullable=False, server_default='')                # 要推送的日期
+    target_ai_score = Column(db.Float,  nullable=False, server_default='0.0')           # 优先推送的AI评分
     message_id = Column(db.String(50), unique=True, nullable=False, server_default='')  # 推送消息id
     retry_times = Column(db.Integer, nullable=False, default=0, server_default='0')     # 推送失败尝试次数
     is_delete = Column(db.Boolean, nullable=False, default=False, server_default='0')   # 是否删除
@@ -122,13 +123,13 @@ class ScriptDelivery(BaseModel):
         return cls.query.filter_by(**kwargs).first()
 
     @classmethod
-    def get_required_script_delivery_list(cls):
+    def get_required_script_delivery_list(cls, group_name: str = None):
         results = {}
         push_date = date.today().strftime("%Y-%m-%d")
-        queryset = cls.query\
-            .filter_by(push_date=push_date, is_pushed=False, is_delete=False)\
-            .filter(cls.retry_times < 4)\
-            .all()
+        kwargs = dict(push_date=push_date, is_pushed=False, is_delete=False)
+        group_name and kwargs.update(group_name=group_name)
+
+        queryset = cls.query.filter_by(**kwargs).filter(cls.retry_times < 2).all()
 
         # for group_name, objects in groupby(queryset, key=attrgetter("group_name")):
         for obj in queryset:
@@ -193,5 +194,11 @@ class ScriptDelivery(BaseModel):
         if incr:
             cls.query.filter(cls.uniq_id.in_(uniq_ids)).update({cls.retry_times: cls.retry_times + 1}, synchronize_session=False)
         db.session.commit()
+
+    @classmethod
+    def update_push_date_by_ids(cls, ids: List[int], push_date: str):
+        cls.query.filter(cls.id.in_(ids)).update(dict(push_date=push_date))
+        db.session.commit()
+
 
 

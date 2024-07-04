@@ -4,7 +4,7 @@ import os.path
 from itertools import groupby
 from operator import attrgetter
 from datetime import date, datetime, timedelta
-from typing import Optional, Dict, List
+from typing import Optional, Dict, List, Any
 
 from sqlalchemy import func
 from sqlalchemy.orm import load_only
@@ -79,13 +79,14 @@ class AuthorDelivery(BaseModel):
         return list({obj.rid for obj in queryset})
 
     @classmethod
-    def get_required_top_author_delivery_list(cls):
+    def get_required_top_author_delivery_list(cls, group_name: str = None):
         results = {}
         kwargs = dict(
             workflow_state=2, is_pushed=False, is_delete=False,
             push_date=date.today().strftime("%Y-%m-%d"),
         )
-        queryset = cls.query.filter_by(**kwargs).filter(cls.retry_times < 4).order_by(cls.id.asc()).all()
+        group_name and kwargs.update(group_name=group_name)
+        queryset = cls.query.filter_by(**kwargs).filter(cls.retry_times < 2).order_by(cls.id.asc()).all()
 
         for obj in queryset:
             results.setdefault(obj.group_name, []).append(obj)
@@ -99,9 +100,13 @@ class AuthorDelivery(BaseModel):
 
     @classmethod
     def update_message_id_by_ids(cls, ids, message_id, incr: bool = False):
-        cls.query.filter(cls.id.in_(ids)).update(dict(message_id=message_id))
-        if incr:
-            cls.query.filter(cls.id.in_(ids)).update({cls.retry_times: cls.retry_times + 1}, synchronize_session=False)
+        # cls.query.filter(cls.id.in_(ids)).update({cls.retry_times: cls.retry_times + 1}, synchronize_session=False)
+
+        for obj in cls.query.filter(cls.id.in_(ids)).all():
+            obj.message_id = message_id
+            if incr:
+                obj.retry_times = obj.retry_times + 1
+
         db.session.commit()
 
     @classmethod
@@ -110,14 +115,13 @@ class AuthorDelivery(BaseModel):
         db.session.commit()
 
     @classmethod
-    def update_brief_by_rid(cls, rid, brief, state):
-        cls.query.filter_by(rid=rid).update({"brief": brief, "workflow_state": state})
+    def update_value_by_rid(cls, rid: str, upt_value: Dict[str, Any]):
+        cls.query.filter_by(rid=rid).update(upt_value)
         db.session.commit()
 
     @classmethod
     def update_rid_by_id(cls, pk, rid):
         cls.query.filter_by(id=pk).update({"rid": rid})
         db.session.commit()
-
 
 
