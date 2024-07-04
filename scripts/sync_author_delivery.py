@@ -22,7 +22,7 @@ class SyncAuthorRules(RulesBase):
     def __init__(self):
         self.max_seconds = 1 * 24 * 60 * 60
 
-        self.workflow_id = "a77a8cfdf01e4ebcb57d75719e2988c9"
+        self.workflow_id = "5a8c0fc1579e4ed586f007d285084223"
         self.user_id = "86ab55af067944c196c2e6bc751b94f8"
 
     def trigger_ai_workflow(self, author, platform):
@@ -71,8 +71,14 @@ class SyncAuthorRules(RulesBase):
         else:
             logger.error(f"workflow_id: {self.workflow_id} not found")
 
-    def _get_workflow_run_record_id(self, author, platform, push_date: str):
-        instance = AuthorDelivery.get_object(author=author, platform=platform, push_date=push_date)
+    def _get_workflow_run_record_id(self, author, platform):
+        # 可能之前跑出的工作流，并没有获取到【作者简介】
+        instance = AuthorDelivery.query\
+            .filter_by(author=author, platform=platform)\
+            .filter(AuthorDelivery.rid != '')\
+            .order_by(AuthorDelivery.id.asc())\
+            .first()
+
         if instance is None or not instance.rid:
             return False
 
@@ -95,6 +101,9 @@ class SyncAuthorRules(RulesBase):
         return obj.batch_id
 
     def save_db(self, ok_results: list):
+        # 头部作者全部推送，当天同步数据，当天推送
+        push_date = date.today().strftime("%Y-%m-%d")
+
         for item in ok_results:
             for group_name in prompts.PUSH_REBOT_TOP_AUTHOR_LIST:
                 author = item["author"]
@@ -103,7 +112,6 @@ class SyncAuthorRules(RulesBase):
                 group_instance = AuthorDelivery.get_object(author=author, work_name=work_name, group_name=group_name)
 
                 # 获取batch_id
-                push_date = date.today().strftime("%Y-%m-%d")
                 batch_id = self.get_batch_id(group_name, push_date)
 
                 if group_instance is None:
@@ -117,7 +125,7 @@ class SyncAuthorRules(RulesBase):
                     )
 
                 # 过滤, 并且相同的工作流只执行一次(注意：是同用户下的具体工作流的执行记录)
-                rid = self._get_workflow_run_record_id(author, platform, push_date)
+                rid = self._get_workflow_run_record_id(author, platform)
                 if not rid:
                     # 触发工作流
                     rid = self.trigger_ai_workflow(author, platform)
@@ -126,14 +134,21 @@ class SyncAuthorRules(RulesBase):
                     AuthorDelivery.update_workflow_by_id(group_instance.id, rid=rid, state=1)
 
     def sync_records(self, start_dt: str = None, end_dt: str = None):
+        """ 同步只在工作日同步，节假日不同步 (指定 start_dt 与 end_dt除外) """
         logger.info('SyncAuthorRules.sync_records => 【开始】同步數據')
 
         ok_results = []
 
         if not start_dt and not end_dt:
-            today = date.today()
-            start_dt = datetime(year=today.year, month=today.month, day=today.day)
-            end_dt = start_dt.replace(hour=23, minute=59, second=59)
+            if not self.is_workday():
+                return
+
+            now_dt = datetime.now()
+            previous_date = self.get_previous_workday(now_dt)
+
+            start_dt = datetime(year=previous_date.year, month=previous_date.month, day=previous_date.day)
+            end_dt = now_dt.replace(hour=23, minute=59, second=59)
+
         else:
             start_dt = datetime.strptime(start_dt, "%Y-%m-%d %H:%M:%S")
             end_dt = datetime.strptime(end_dt, "%Y-%m-%d %H:%M:%S")
