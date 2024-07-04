@@ -2,8 +2,9 @@ import json
 import re
 import os.path
 import itertools
-from operator import itemgetter
-from datetime import timedelta
+from operator import itemgetter, attrgetter
+from datetime import timedelta, date
+from typing import Dict, List, Any
 
 from sqlalchemy.orm import load_only
 
@@ -29,14 +30,14 @@ class SyncScriptDeliveryRules(RulesBase):
     def __init__(self, workflow_id: str = None, user_id: str = None):
         self.workflow_id = workflow_id or os.environ["SYNC_WORKFLOW_ID"]
         self.user_id = user_id or os.environ["SYNC_USER_ID"]
-        self.min_ai_score = 8.5
+        self._sync_min_ai_score = 8.4
 
         logger.info("SyncScriptDelivery => init workflow_id: %s, user_id: %s", self.workflow_id, self.user_id)
 
     @staticmethod
-    def get_which_teams_from_input(input_fields):
-        team_name_set = set()
-        mapping = {"豆瓣小说": "豆瓣", "番茄小说": "番茄", "起点小说": "起点"}
+    def get_which_teams_from_input(input_fields: List[Dict[str, Any]]) -> Dict[str, Dict[str, float]]:
+        team_dict = {}
+        mapping = {"豆瓣小说": "豆瓣", "番茄小说": "番茄", "起点小说": "起点", "晋江小说": "晋江"}
 
         name_list = [item["value"] for item in input_fields if item["display_name"] == "小说平台"]
         name = name_list[0] if name_list else None
@@ -47,16 +48,17 @@ class SyncScriptDeliveryRules(RulesBase):
 
         for team_items in settings.PUSH_REBOT_GROUP_MAPPING:
             team_name = team_items["name"]
+            target_ai_score = team_items["target_ai_score"]
 
             for matching_item in team_items["matching_list"]:
                 for key, values in matching_item.items():
                     if name == key and type_list == values:
-                        team_name_set.add(team_name)
+                        team_dict[team_name] = dict(target_ai_score=target_ai_score)
 
-        logger.info("匹配到团队: %s", team_name_set)
-        return list(team_name_set)
+        logger.info("所有匹配到的团队: %s", json.dumps(team_dict, indent=4, ensure_ascii=False))
+        return team_dict
 
-    def get_matching_rids_from_output(self, output_nodes):
+    def get_matching_rids_from_output(self, output_nodes: List[Dict[str, Any]]) -> List[str]:
         results = []
 
         for output in output_nodes:
@@ -72,28 +74,40 @@ class SyncScriptDeliveryRules(RulesBase):
 
         return results
 
-    def get_team_run_records_mapping(self):
-        # team_data = {team_name1: [rid1, rid2], team_name2: [rid3, rid4], ......}
-        team_data = {}
+    def get_team_run_records_mapping(self) -> Dict[str, Any]:
+        # team_data_dict = {ta: {"rids": [rid1, rid2], "target_ai_score": 8.4}, ......}
+        team_data_dict = {}
         queryset = WorkflowRunRecord.query\
-            .options(load_only(WorkflowRunRecord.rid, WorkflowRunRecord.general_details, WorkflowRunRecord.parent_wid)) \
-            .filter_by(workflow_id=self.workflow_id, user_id=self.user_id, status="FINISHED") \
+            .options(load_only(
+                WorkflowRunRecord.rid,
+                WorkflowRunRecord.general_details,
+                WorkflowRunRecord.parent_wid
+            )) \
+            .filter_by(
+                workflow_id=self.workflow_id,
+                user_id=self.user_id, status="FINISHED"
+            ) \
             .all()
-
         parent_objs = [obj for obj in queryset if not obj.parent_wid]
+
         for parent_obj in parent_objs:
             general_details = json.loads(parent_obj.general_details)
             ui_design = general_details["ui_design"]
             input_fields = ui_design["inputFields"]
             output_nodes = ui_design["outputNodes"]
 
-            team_name_list = self.get_which_teams_from_input(input_fields=input_fields)
-            for team_name in team_name_list:
+            team_dict = self.get_which_teams_from_input(input_fields=input_fields)
+            for team_name in team_dict:
                 rids = self.get_matching_rids_from_output(output_nodes=output_nodes)
-                team_data.setdefault(team_name, []).extend(rids)
-                logger.info("=>>> 团队: %s, rids: %s", team_name, rids)
 
-        return team_data
+                team_item = team_data_dict.setdefault(team_name, {})
+                target_ai_score = team_dict[team_name]["target_ai_score"]
+                team_item["target_ai_score"] = target_ai_score
+                team_item.setdefault("rids", []).extend(rids)
+
+                logger.info("=>>> 团队: %s, target_ai_score: %s, rids: %s", team_name, target_ai_score, rids)
+
+        return team_data_dict
 
     def get_values_from_input(self, input_fields):
         data = {}
@@ -150,14 +164,13 @@ class SyncScriptDeliveryRules(RulesBase):
         return queryset
 
     def save_db(self, ok_results):
-        step = 2
+        """ 数据入库 """
         ok_results.sort(key=itemgetter("group_name"))  # 按组名分组排序
-        log_msg = "save_db ==>> group_name: %s, push_date: %s, rid: %s, author: %s, work_name: %s, ai_score：%s"
+        log_msg = "save_db ==>> 群: {group_name}, rid: {rid}, 作者: {author}, 作品: {work_name}, AI评分：{ai_score}"
 
         for group_name, iterator in itertools.groupby(ok_results, key=itemgetter("group_name")):
-            # 再次去除重复的数据(作者+书名)
             values = []
-            author_books_set = set()
+            author_books_set = set()    # 对同一个团队进行再次去除重(作者+书名)
 
             for item in list(iterator):
                 src_url = item.get("src_url")
@@ -170,44 +183,45 @@ class SyncScriptDeliveryRules(RulesBase):
                     author_books_set.add(uniq_key)
                     values.append(item)
 
-            # 计算 push_date
-            is_new, push_date = ScriptDelivery.get_latest_push_date_by_group_name(group_name)
-            tmp_push_date = push_date - timedelta(days=1)
+            for each_item in values:
+                logger.info(log_msg.format(**each_item))
 
-            # 每 step 个分组
-            group_values = []
-            if not is_new and values:
-                group_values.append([values.pop(0)])
-            group_values.extend([values[i:i + step] for i in range(0, len(values), step)])
+                OutputDelivery.create(rid=each_item["rid"])
+                ScriptDelivery.create(**each_item)
 
-            for each_values in group_values:
-                tmp_push_date = tmp_push_date + timedelta(days=1)
-                # 周末不推
-                while tmp_push_date.weekday() in [5, 6]:
-                    tmp_push_date = tmp_push_date + timedelta(days=1)
+        # 数据落库之后，综合 T-1,T-2 等数据统一计算下一次要推送的日期(节假日不推送)
+        self.compute_next_push_date()
 
-                push_date_str = tmp_push_date.strftime("%Y-%m-%d")
-                # print(group_name, each_item["author"], each_item["work_name"])
+    def compute_next_push_date(self):
+        """ 计算推送日期 每个群组每天两条 """
+        queryset = ScriptDelivery.query\
+            .filter_by(is_pushed=False, is_delete=False, push_date='')\
+            .order_by(ScriptDelivery.group_name.asc())\
+            .all()
 
-                for each_item in each_values:
-                    rid = each_item["rid"]
-                    each_item["push_date"] = push_date_str
+        # 群组推送规则：开坑日期最新+评分越高的优先推送
+        for group_name, iterator in itertools.groupby(queryset, key=attrgetter("group_name")):
+            objects = list(iterator)
+            objects.sort(key=attrgetter("pit_date", "ai_score"), reverse=True)
 
-                    log_args = (
-                        group_name, push_date_str, rid,
-                        each_item["author"], each_item["work_name"], each_item["ai_score"]
-                    )
-                    logger.info(log_msg, *log_args)
-                    OutputDelivery.create(rid=rid)
-                    ScriptDelivery.create(**each_item)
+            # 跟新推送日期(前两条)
+            ids = [obj.id for obj in objects[:2]]
+            ScriptDelivery.update_push_date_by_ids(ids=ids, push_date=date.today().strftime("%Y-%m-%d"))
 
     def sync_records(self):
+        """ 同步只在工作日同步，节假日不同步 """
         logger.info('SyncScriptDelivery.parse_records => 【开始】同步數據')
+
+        if not self.is_workday():
+            return
 
         ok_results = []
         team_data_mapping = self.get_team_run_records_mapping()
 
-        for team_name, rids in team_data_mapping.items():
+        for team_name, data_item in team_data_mapping.items():
+            rids = data_item["rids"]
+            target_ai_score = data_item["target_ai_score"]
+
             for run_obj in self._get_workflow_run_records(rids):
                 general_details = json.loads(run_obj.general_details)
                 ui_design = general_details["ui_design"]
@@ -218,22 +232,21 @@ class SyncScriptDeliveryRules(RulesBase):
                 output_data = self.get_values_from_output(output_nodes=output_nodes)
                 values = dict(
                     rid=run_obj.rid, output="",
-                    # output=run_obj.general_details,
-                    group_name=team_name,
+                    group_name=team_name, target_ai_score=target_ai_score,
                     **input_data, **output_data
                 )
 
-                # 重复的过滤: 只要同作者、作品和所属团队 存在的就不新增
+                # 重复的过滤: 只要同作者、作品和所属团队 存在的过滤
                 filter_kw = dict(group_name=team_name, author=values['author'], work_name=values["work_name"])
                 is_existed = ScriptDelivery.query.filter_by(**filter_kw).first()
                 if is_existed:
-                    logger.info("以重复的数据: %s", filter_kw)
+                    logger.warning("团队: {group_name}, 作者：{author}, 作品: {work_name} 数据已经重复", **filter_kw)
                     continue
 
                 # 计算小说所属平台
                 values["platform"] = self._get_platform(values.get("src_url"))
 
-                if float(values.get('ai_score', '0')) >= self.min_ai_score:
+                if float(values.get('ai_score', '0')) >= self._sync_min_ai_score:
                     ok_results.append(values)
 
         self.save_db(ok_results=ok_results)
@@ -244,8 +257,5 @@ if __name__ == "__main__":
     from runserver import app
 
     with app.app_context():
-        SyncScriptDeliveryRules(
-            workflow_id="5a5972201eb4432ca9dfb434d3b4a931",
-            user_id="86ab55af067944c196c2e6bc751b94f8"
-        ).sync_records()
+        SyncScriptDeliveryRules().sync_records()
 

@@ -1,4 +1,8 @@
 from urllib.parse import urlparse, parse_qs
+from datetime import date, datetime, timedelta
+
+import chinese_calendar as calendar
+from wecom.utils.log import logger
 
 
 class RulesBase:
@@ -29,3 +33,25 @@ class RulesBase:
                 return platform
 
         return ""
+
+    def is_workday(self, dt: datetime = None):
+        """ 是否为工作日 """
+        dt = date.today() if dt is None else dt
+        dt_str = dt.strftime("%Y-%m-%d")
+        is_work = calendar.is_workday(dt)
+
+        if is_work:
+            logger.info("日期: %s 是工作日", dt_str)
+        else:
+            logger.info("日期: %s 是法定调休日", dt_str)
+
+        return is_work
+
+    def get_previous_workday(self, dt: datetime) -> date:
+        """ 获取上一个工作日 """
+        cur_dt = dt - timedelta(days=1)
+        if calendar.is_workday(cur_dt):
+            return cur_dt.date()
+
+        return self.get_previous_workday(cur_dt)
+
