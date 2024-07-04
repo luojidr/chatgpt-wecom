@@ -6,6 +6,7 @@ from operator import itemgetter, attrgetter
 from datetime import timedelta, date
 from typing import Dict, List, Any
 
+from sqlalchemy import or_
 from sqlalchemy.orm import load_only
 
 # 单脚本执行时
@@ -194,8 +195,10 @@ class SyncScriptDeliveryRules(RulesBase):
 
     def compute_next_push_date(self):
         """ 计算推送日期 每个群组每天两条 """
+        push_date = date.today().strftime("%Y-%m-%d")
         queryset = ScriptDelivery.query\
-            .filter_by(is_pushed=False, is_delete=False, push_date='')\
+            .filter_by(is_pushed=False, is_delete=False)\
+            .filter(or_(ScriptDelivery.push_date == "", ScriptDelivery.push_date == push_date))\
             .order_by(ScriptDelivery.group_name.asc())\
             .all()
 
@@ -206,7 +209,11 @@ class SyncScriptDeliveryRules(RulesBase):
 
             # 跟新推送日期(前两条)
             ids = [obj.id for obj in objects[:2]]
-            ScriptDelivery.update_push_date_by_ids(ids=ids, push_date=date.today().strftime("%Y-%m-%d"))
+            ScriptDelivery.update_push_date_by_ids(ids=ids, push_date=push_date)
+
+            # 其他的日期置空
+            other_ids = [obj.id for obj in objects[2:]]
+            ScriptDelivery.update_push_date_by_ids(ids=other_ids, push_date="")
 
     def sync_records(self):
         """ 同步只在工作日同步，节假日不同步 """
