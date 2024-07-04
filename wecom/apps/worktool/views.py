@@ -85,7 +85,7 @@ def download(filename):
 
 
 @blueprint.route("/push", methods=["POST"])
-def push_top_author():
+def push_message():
     is_online = MessageReply().get_rebot_status()
     if not is_online:
         return jsonify(msg="rebot is offline", status=5003, data=None)
@@ -93,6 +93,7 @@ def push_top_author():
     params = request.args
     push_type = params.get("push_type")
     assert push_type in ["ai", "top_author"], "推送类型错误"
+    logger.info("push_message => path: %s, params: %s", request.path, params)
 
     if push_type == "ai":
         target_func = delivery.DeliveryScript().push
@@ -104,15 +105,17 @@ def push_top_author():
     return jsonify(msg="ok", status=200, data=None)
 
 
-@blueprint.route('/sync_script_delivery', methods=['POST'])
-def sync_script_delivery():
-    SyncScriptDeliveryRules().sync_records()
-    return jsonify(msg="sync_script_delivery is ok", status=200, data=None)
+@blueprint.route('/sync_delivery_data', methods=['POST'])
+def sync_delivery_data():
+    params = request.args
+    sync_type = params.get("sync_type")
+    assert sync_type in ["ai", "top_author"], "同步数据类型错误"
 
+    if sync_type == "ai":
+        SyncScriptDeliveryRules().sync_records()
+    else:
+        SyncAuthorRules().sync_records()
 
-@blueprint.route('/sync_author_delivery', methods=['POST'])
-def sync_author_delivery():
-    SyncAuthorRules().sync_records()
     return jsonify(msg="sync_script_delivery is ok", status=200, data=None)
 
 
