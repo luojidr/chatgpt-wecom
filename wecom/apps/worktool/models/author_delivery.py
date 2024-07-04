@@ -35,6 +35,7 @@ class AuthorDelivery(BaseModel):
     batch_id = Column(db.String(6), unique=True, nullable=False, server_default='')         # 批次
     message_id = Column(db.String(50), unique=True, nullable=False, server_default='')      # 推送消息id
     is_delete = Column(db.Boolean, nullable=False, default=False, server_default='0')       # 是否删除
+    is_adapt = Column(db.Boolean, nullable=False, default=False, server_default='0')        # 是否有影视改编作品
     retry_times = Column(db.Integer, nullable=False, default=0, server_default='0')         # 重试次数
     pushed_time = Column(db.DateTime)                                                       # 推送时间
     finished_time = Column(db.DateTime)                                                     # 数据接收完成时间
@@ -86,7 +87,7 @@ class AuthorDelivery(BaseModel):
             push_date=date.today().strftime("%Y-%m-%d"),
         )
         group_name and kwargs.update(group_name=group_name)
-        queryset = cls.query.filter_by(**kwargs).filter(cls.retry_times < 2).order_by(cls.id.asc()).all()
+        queryset = cls.query.filter_by(**kwargs).filter(cls.retry_times < 2).order_by(cls.is_adapt.desc()).all()
 
         for obj in queryset:
             results.setdefault(obj.group_name, []).append(obj)

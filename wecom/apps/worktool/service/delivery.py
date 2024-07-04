@@ -32,6 +32,9 @@ def auto_fresh_top_author_brief():
         "由于缺乏具体的数据、奖项名称等实体信息",
     ]
 
+    # 影视改编的
+    adapt_regex = re.compile(r"(.*?)\s* adaptation\s*of\s*(.*?)\s*", re.I)
+
     for rid in rid_list:
         output_str = WorkflowRunRecord.get_output_by_rid(rid=rid)
         if output_str:
@@ -96,6 +99,8 @@ class DeliveryAuthor:
                 ids = push_dict["ids"]
                 batch_id = push_dict["batch_id"]
                 templates = push_dict["templates"]
+
+                # 注意：[头部作者开新坑]有影视改编作品的，放在最前位置
 
                 if len(templates) <= 2:
                     content = AuthorContentCouple(templates).get_layout_content()
