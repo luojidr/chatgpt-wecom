@@ -240,7 +240,7 @@ class SyncScriptDeliveryRules(RulesBase):
                 filter_kw = dict(group_name=team_name, author=values['author'], work_name=values["work_name"])
                 is_existed = ScriptDelivery.query.filter_by(**filter_kw).first()
                 if is_existed:
-                    logger.warning("团队: {group_name}, 作者：{author}, 作品: {work_name} 数据已经重复", **filter_kw)
+                    logger.warning("团队: {group_name}, 作者：{author}, 作品: {work_name} 数据已经重复".format(**filter_kw))
                     continue
 
                 # 计算小说所属平台
