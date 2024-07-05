@@ -53,8 +53,9 @@ class SyncScriptDeliveryRules(RulesBase):
 
             for matching_item in team_items["matching_list"]:
                 for key, values in matching_item.items():
-                    if name == key and type_list == values:
-                        team_dict[team_name] = dict(target_ai_score=target_ai_score)
+                    if name == key:
+                        if values == ["all"] or values == type_list:
+                            team_dict[team_name] = dict(target_ai_score=target_ai_score)
 
         logger.info("所有匹配到的团队: %s", json.dumps(team_dict, indent=4, ensure_ascii=False))
         return team_dict
@@ -197,7 +198,7 @@ class SyncScriptDeliveryRules(RulesBase):
         """ 计算推送日期 每个群组每天两条 """
         push_date = date.today().strftime("%Y-%m-%d")
         queryset = ScriptDelivery.query\
-            .filter_by(is_pushed=False, is_delete=False)\
+            .filter_by(is_delete=False)\
             .filter(or_(ScriptDelivery.push_date == "", ScriptDelivery.push_date == push_date))\
             .order_by(ScriptDelivery.group_name.asc())\
             .all()
