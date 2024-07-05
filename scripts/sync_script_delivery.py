@@ -136,7 +136,7 @@ class SyncScriptDeliveryRules(RulesBase):
             # 题材类型
             {"key": "theme", "pattern": re.compile(r"【题材类型】：(.*?)【", re.S | re.M)},
             # AI评分
-            {"key": "ai_score", "pattern": re.compile(r"【总体评价】.*?总评分.*?(\d+\.\d+)", re.S | re.M)},
+            {"key": "ai_score", "pattern": re.compile(r"【总体评价】.*?总评分.*?(\d+\.\d)", re.S | re.M)},
             # 核心亮点
             {"key": "core_highlight", "pattern": re.compile(r"【故事Slogan】：(.*)【|【故事Solgan】：(.*)【", re.S | re.M)},
             # 核心创意
