@@ -198,7 +198,7 @@ class SyncScriptDeliveryRules(RulesBase):
         """ 计算推送日期 每个群组每天两条 """
         push_date = date.today().strftime("%Y-%m-%d")
         queryset = ScriptDelivery.query\
-            .filter_by(is_delete=False)\
+            .filter_by(is_pushed=False, is_delete=False)\
             .filter(or_(ScriptDelivery.push_date == "", ScriptDelivery.push_date == push_date))\
             .order_by(ScriptDelivery.group_name.asc())\
             .all()
