@@ -23,9 +23,9 @@ __all__ = ["DeliveryAuthor", "DeliveryScript"]
 
 
 def auto_fresh_top_author_brief():
-    pattern = re.compile(r"4、.*?一句话提炼.*?市场表现等的具体亮点.*?：(.*)$", re.M | re.S)
+    brief_pattern = re.compile(r"4、.*?一句话提炼.*?市场表现等的具体亮点.*?：(.*)$", re.M | re.S)
     rid_list = AuthorDelivery.get_running_rids_by_workflow_state(workflow_state=1)
-    none_text_list = [
+    brief_empty_list = [
         "由于缺乏具体的改编作品信息",
         "暂无公开信息显示",
         "暂无具体数据或奖项",
@@ -33,7 +33,8 @@ def auto_fresh_top_author_brief():
     ]
 
     # 影视改编的
-    adapt_regex = re.compile(r"(.*?)\s* adaptation\s*of\s*(.*?)\s*", re.I)
+    adapt_pattern = re.compile(r"2、.*?影视改编作品的明星主演、市场表现、.*?站内热度、口碑情况.*?：(.*?)3、", re.M | re.S)
+    adapt_check_regex = re.compile(r"①《.*?》：.*?明星主演.*?市场表现.*?站内热度.*?口碑情况", re.M | re.S)
 
     for rid in rid_list:
         output_str = WorkflowRunRecord.get_output_by_rid(rid=rid)
@@ -45,18 +46,21 @@ def auto_fresh_top_author_brief():
             template = output_nodes[0]["data"]["template"]
             text = template["text"]["value"]
 
-            if any([s in text for s in none_text_list]):
+            if any([s in text for s in brief_empty_list]):
                 upt_value = dict(rid="", brief="", is_delete=True, workflow_state=2)
             else:
-                match = pattern.search(text)
-
-                if match:
-                    brief = match.group(1).strip().lstrip(' -')
+                brief_match = brief_pattern.search(text)
+                if brief_match:
+                    brief = brief_match.group(1).strip().lstrip(' -')
                     brief = brief.split("\n", 1)[0].strip()
 
                     upt_value = dict(brief=brief, is_delete=False, workflow_state=2)
                 else:
                     upt_value = dict(rid="", brief="", is_delete=True, workflow_state=2)
+
+            adapt_match = adapt_pattern.search(text)
+            if adapt_match and adapt_check_regex.search(adapt_match.group(1)):
+                upt_value.update(is_adapt=True)
 
             AuthorDelivery.update_value_by_rid(rid, upt_value)
 
