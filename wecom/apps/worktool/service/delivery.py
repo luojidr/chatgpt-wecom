@@ -209,9 +209,11 @@ class WTMessageListener:
 
             if success_name == settings.WT_ROBOT_DETECTION_RECEIVER:
                 self.listen_auto_reply_to_scrcpy()
-            elif success_name in prompts.PUSH_REBOT_TOP_AUTHOR_LIST:
-                self.listen_external_group_top_author()
             else:
+                # message_id 肯定不一样的
+                if success_name in prompts.PUSH_REBOT_TOP_AUTHOR_LIST:
+                    self.listen_external_group_top_author()
+
                 if success_name in ai_group_names:
                     self.listen_external_group_ai_evaluation()
         else:
