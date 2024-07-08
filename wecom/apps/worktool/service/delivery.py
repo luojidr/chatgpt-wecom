@@ -208,7 +208,11 @@ class WTMessageListener:
         ai_group_names = [item["name"] for item in settings.PUSH_REBOT_GROUP_MAPPING]
 
         if message_state["error_code"] == 0:
-            success_name = message_state["success_list"][0]
+            success_list = message_state["success_list"]
+            if not success_list:
+                return
+
+            success_name = success_list[0]
             logger.warn("恭喜，群：[%s] 发送消息成功，消息ID: %s", success_name, self.message_id)
 
             if success_name == settings.WT_ROBOT_DETECTION_RECEIVER:
