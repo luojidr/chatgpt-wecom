@@ -1,3 +1,4 @@
+import re
 import json
 import string
 import random
@@ -11,11 +12,13 @@ from sqlalchemy.orm import load_only
 
 from scripts.base import RulesBase
 from config import settings, prompts
-from wecom.utils.log import logger
 from wecom.apps.worktool.models.workflow import Workflow
 from wecom.apps.worktool.models.workflowrunrecord import WorkflowRunRecord
 from wecom.apps.worktool.models.top_author import TopAuthor, db
+from wecom.apps.worktool.models.author_retrieval import AuthorRetrieval
 from wecom.apps.worktool.models.author_delivery import AuthorDelivery
+from wecom.utils.log import logger
+from wecom.utils.llm import AuthorRetrievalByBingSearch
 
 
 class SyncAuthorRules(RulesBase):
@@ -71,6 +74,51 @@ class SyncAuthorRules(RulesBase):
         else:
             logger.error(f"workflow_id: {self.workflow_id} not found")
 
+    def get_author_brief(self, author, platform):
+        is_ok, is_adapt, brief, rid = False, False, "", ""
+
+        result = AuthorRetrievalByBingSearch(author, platform).get_invoked_result_by_llm()
+        rid = uniq = result["session_id"]
+        llm_content = result["content"]
+
+        # 1) 将大模型调用bingsearch的结果入库
+        AuthorRetrieval.create(
+            uniq=uniq,
+            bing_results=result["bing_results"],
+            llm_content=llm_content,
+        )
+
+        # 2) 解析brief
+        brief_pattern = re.compile(r"4、.*?一句话提炼.*?市场表现等的具体亮点.*?：(.*)$", re.M | re.S)
+        brief_empty_list = [
+            "由于缺乏具体的改编作品信息",
+            "暂无公开信息显示",
+            "暂无具体数据或奖项",
+            "由于缺乏具体的数据、奖项名称等实体信息",
+        ]
+
+        # 影视改编的
+        adapt_pattern = re.compile(r"2、.*?影视改编作品的明星主演、市场表现、.*?站内热度、口碑情况.*?：(.*?)3、", re.M | re.S)
+        adapt_check_regex = re.compile(r"①《.*?》：.*?明星主演.*?市场表现.*?站内热度.*?口碑情况", re.M | re.S)
+
+        brief_match = brief_pattern.search(llm_content)
+        if brief_match:
+            brief = brief_match.group(1).strip().lstrip(' -')
+            brief = brief.split("\n", 1)[0].strip()
+
+            if any([s in text for s in brief_empty_list]):
+                is_ok, brief = False, brief
+            else:
+                is_ok, brief = True, brief
+        else:
+            is_ok, brief = False, ""
+
+        adapt_match = adapt_pattern.search(llm_content)
+        if adapt_match and adapt_check_regex.search(adapt_match.group(1)):
+            is_adapt = True
+
+        return dict(is_ok=is_ok, is_adapt=is_adapt, brief=brief, rid=rid)
+
     def _get_workflow_run_record_id(self, author, platform):
         # 可能之前跑出的工作流，并没有获取到【作者简介】
         instance = AuthorDelivery.query\
@@ -115,23 +163,27 @@ class SyncAuthorRules(RulesBase):
                 batch_id = self.get_batch_id(group_name, push_date)
 
                 if group_instance is None:
+                    llm_result = self.get_author_brief(author, platform)
+
                     group_instance = AuthorDelivery.create(
-                        author=author, brief=item["brief"],
+                        author=author, brief=llm_result["brief"],
                         work_name=work_name, theme=item["theme"],
                         src_url=item["src_url"], platform=platform,
-                        is_pushed=False, is_workflow=False, is_delete=False,
+                        is_pushed=False, is_workflow=False,
                         group_name=group_name, finished_time=datetime.now(),
-                        push_date=push_date, batch_id=batch_id
+                        push_date=push_date, batch_id=batch_id,
+                        rid=llm_result["rid"], workflow_state=2,
+                        is_adapt=llm_result["is_adapt"], is_delete=not llm_result["is_ok"],
                     )
 
-                # 过滤, 并且相同的工作流只执行一次(注意：是同用户下的具体工作流的执行记录)
-                rid = self._get_workflow_run_record_id(author, platform)
-                if not rid:
-                    # 触发工作流
-                    rid = self.trigger_ai_workflow(author, platform)
-
-                if rid:
-                    AuthorDelivery.update_workflow_by_id(group_instance.id, rid=rid, state=1)
+                # # 过滤, 并且相同的工作流只执行一次(注意：是同用户下的具体工作流的执行记录)
+                # rid = self._get_workflow_run_record_id(author, platform)
+                # if not rid:
+                #     # 触发工作流
+                #     rid = self.trigger_ai_workflow(author, platform)
+                #
+                # if rid:
+                #     AuthorDelivery.update_workflow_by_id(group_instance.id, rid=rid, state=1)
 
     def sync_records(self, start_dt: str = None, end_dt: str = None):
         """ 同步只在工作日同步，节假日不同步 (指定 start_dt 与 end_dt除外) """

@@ -17,6 +17,7 @@ from wecom.core.database import db, Column, BaseModel
 class AuthorDelivery(BaseModel):
     __tablename__ = 'wecom_author_delivery'
 
+    # rid: 弃用工作流运行结果rid，采用本地调用，随机生成 session_id
     rid = Column(db.String(100), nullable=False, server_default='')
     author = Column(db.String(100), nullable=False, server_default='')                      # 作者
     brief = Column(db.String(300), nullable=False, server_default='')                       # 作者简介
