@@ -57,7 +57,7 @@ class SyncScriptDeliveryRules(RulesBase):
                         if values == ["all"] or values == type_list:
                             team_dict[team_name] = dict(target_ai_score=target_ai_score)
 
-        logger.info("所有匹配到的团队: %s", json.dumps(team_dict, indent=4, ensure_ascii=False))
+        # logger.info("所有匹配到的团队: %s", json.dumps(team_dict, indent=4, ensure_ascii=False))
         return team_dict
 
     def get_matching_rids_from_output(self, output_nodes: List[Dict[str, Any]]) -> List[str]:
