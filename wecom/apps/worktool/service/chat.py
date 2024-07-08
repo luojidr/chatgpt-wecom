@@ -14,7 +14,7 @@ from wecom.apps.worktool.models.script_delivery import ScriptDelivery
 class ChatCompletion:
     SESSIONS = ExpiredDict(settings.SESSION_EXPIRES_IN_SECONDS * 6)
 
-    def __init__(self, session_id, messages):
+    def __init__(self, session_id, messages: List[Dict[str, str]] = None):
         self.session_id = session_id
         self.sessions = self.SESSIONS
 
@@ -26,7 +26,8 @@ class ChatCompletion:
         )
 
         self._tmp_messages = []
-        self._add_messages(messages)
+        if messages:
+            self._add_messages(messages)
 
     def _get_content(self):
         text = ""
@@ -111,18 +112,24 @@ class ChatCompletion:
         messages = self._tmp_messages
         return num_tokens_from_messages(messages, self.model)
 
-    def stream_generator(self):
+    def get_completions(self, messages: List[Dict[str, str]] = None, stream: bool = False):
         response = self.client.chat.completions.create(
             model=self.model,
-            messages=self._tmp_messages,
+            messages=messages or self._tmp_messages,
             temperature=0.9,
             max_tokens=4096,
             top_p=0.95,
             frequency_penalty=0,
             presence_penalty=0,
             stop=None,
-            stream=True
+            stream=stream
         )
+
+        return response
+
+    def stream_generator(self):
+        response = self.get_completions(stream=True)
+
         for chunk in response:
             sse_message = f"data: {json.dumps(chunk.dict())}\n\n"
             yield sse_message
