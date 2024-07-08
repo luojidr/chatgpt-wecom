@@ -1473,5 +1473,13 @@ PUSH_REBOT_GROUP_MAPPING = [
 
         ]
     },
+
+    # 有风共创
+    {
+        "name": "有风共创",
+        "target_ai_score": 8.4,
+        "matching_list": [
+        ]
+    }
 ]
 
