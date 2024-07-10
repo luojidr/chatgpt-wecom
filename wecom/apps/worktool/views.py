@@ -92,7 +92,7 @@ def push_message():
 
     params = request.args
     push_type = params.get("push_type")
-    team_name = params.get("push_type")
+    team_name = params.get("team_name")
 
     assert push_type in ["ai", "top_author"], "推送类型错误"
     logger.info("push_message => path: %s, params: %s", request.path, params)
