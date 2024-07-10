@@ -10,7 +10,7 @@ from flask import Response, stream_with_context
 from flask import current_app
 # from flask_security import login_required
 
-from config import settings
+from config import settings, prompts
 from wecom.bot.context import WTTextType
 from wecom.apps.worktool.service import chat, render, delivery
 from wecom.utils import scrcpy
@@ -92,13 +92,16 @@ def push_message():
 
     params = request.args
     push_type = params.get("push_type")
+    team_name = params.get("push_type")
+
     assert push_type in ["ai", "top_author"], "推送类型错误"
     logger.info("push_message => path: %s, params: %s", request.path, params)
 
     if push_type == "ai":
         target_func = delivery.DeliveryScript().push
     else:
-        target_func = delivery.DeliveryAuthor().push
+        group_name = prompts.WT_TEST_GROUP_NAME if team_name == "wind" else None
+        target_func = delivery.DeliveryAuthor(group_name=group_name).push
 
     t = threading.Thread(target=target_func, args=(current_app._get_current_object(), ))
     t.start()
