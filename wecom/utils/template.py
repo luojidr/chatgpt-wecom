@@ -13,12 +13,13 @@ class TemplateBase:
         6: "⑥", 7: "⑦", 8: "⑧", 9: "⑧", 10: "⑩"
     }
 
-    def get_aligned_template_items(self):
-        assert self.template, "模版不能为空"
+    def get_aligned_template_items(self, template: str = None):
+        template = template or self.template
+        assert template, "模版不能为空"
 
         space_cnt = 0
         results = []
-        parts = self.template.split("\n")[1:]
+        parts = template.split("\n")[1:]
 
         for c in parts[0]:
             if c.isspace():
@@ -51,7 +52,7 @@ class TemplateBase:
                 return fmt_text.format(**fmt_kwargs)
 
 
-class TopAuthorNewWorkTemplate:
+class NewWorkTemplate:
     """ 头部作者新作推荐 """
     def __init__(self,
                  author: str, works_name: str, theme: str, core_highlight: str, core_idea: str,
@@ -81,7 +82,7 @@ class TopAuthorNewWorkTemplate:
         self.platform = platform
 
 
-class TopAuthorNewWorkContent(TemplateBase):
+class NewWorkContent(TemplateBase):
     _title = "[{push_date}] 今日高分IP推荐\n"
     template = """
         {number}、{author}《{works_name}》
@@ -94,11 +95,12 @@ class TopAuthorNewWorkContent(TemplateBase):
         {order}出处链接：{src_url}
         {order}平台：{platform}
     """
+    tips = "\n\n如果对今日其他赛道【8.5分新IP（题材不限）】感兴趣，请@我，并回复8.5获取"
 
-    def __init__(self, templates: List[TopAuthorNewWorkTemplate]):
+    def __init__(self, templates: List[NewWorkTemplate]):
         self.templates = templates
 
-    def get_layout_content(self):
+    def get_layout_content(self, include_tips=True):
         content_list = []
         pattern = re.compile(r'\{(.*?)\}')
         template_items = self.get_aligned_template_items()
@@ -121,7 +123,75 @@ class TopAuthorNewWorkContent(TemplateBase):
 
             content_list.append("\n".join(text_list) + "\n")
 
-        return self.title + "\n".join(content_list).strip()
+        content = self.title + "\n".join(content_list).strip()
+        return content + self.tips if include_tips else content
+
+
+class NewWorkContentMore(TemplateBase):
+    _title = ""
+    template = """
+            共有{work_cnt}个{target_score}分IP推荐
+
+            1、{author}《{works_name}》
+            ①题材类型：{theme}
+            ②核心亮点：{core_highlight}
+            ③核心创意：{core_idea}
+            ④开坑时间：{pit_date}
+            ⑤AI评分：{ai_score}
+              评分链接：{detail_url}
+            ⑥出处链接：{src_url}
+            ⑦平台：{platform}
+        """
+    another_template = """
+           1、{author}《{works_name}》
+            ①题材类型：{theme}
+            ②核心亮点：{core_highlight}
+            ③核心创意：{core_idea}
+            ④开坑时间：{pit_date}
+            ⑤AI评分：{ai_score}
+              评分链接：{detail_url}
+            ⑥出处链接：{src_url}
+            ⑦平台：{platform}
+        """
+
+    tips_template = """
+            2、其他{target_score}分IP
+            ①IP名：{work_names}
+            ②IP详情：{more_detail_url}
+    """
+
+    def __init__(self, templates: List[NewWorkTemplate], batch_id: str, target_score: float):
+        self.templates = templates
+        self.batch_id = batch_id
+        self.target_score = target_score
+
+    def get_layout_content(self):
+        content = ""
+        work_cnt = len(self.templates)
+        two_template_map = {1: self.template, 2: self.another_template}
+
+        if len(self.templates) <= 2:
+            for index, _template in enumerate(self.templates, 1):
+                template_items = self.get_aligned_template_items(template=two_template_map[index])
+                template_fmt = "\n".join(template_items)
+                fmt_kwargs = dict(work_cnt=work_cnt,  target_score=self.target_score, **_template.__dict__)
+                content += template_fmt.format(**fmt_kwargs) + "\n"
+        else:
+            fmt_kwargs = dict(work_cnt=work_cnt, target_score=self.target_score, **self.templates[0].__dict__)
+            template_items = self.get_aligned_template_items()
+            template_fmt = "\n".join(template_items)
+            content = template_fmt.format(**fmt_kwargs) + "\n"
+
+            tips_kwargs = dict(
+                target_score=self.target_score,
+                work_names="、".join([template.works_name for template in self.templates[1:]]),
+                more_detail_url=os.environ["MY_HOST"] + "/wecom/new_work/more?bid=%s" % self.batch_id,
+            )
+            tips_template_items = self.get_aligned_template_items(template=self.tips_template)
+            tips_template_fmt = "\n".join(tips_template_items)
+            content += tips_template_fmt.format(**tips_kwargs)
+
+        return content.strip()
 
 
 class AuthorTemplate:

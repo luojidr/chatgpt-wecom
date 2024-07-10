@@ -85,6 +85,14 @@ class RenderTemplate:
         queryset = AuthorDelivery.get_more_authors_by_batch_id(batch_id)
         return dict(object_list=queryset)
 
+    def get_new_work_more_detail(self):
+        batch_id = request.args.get("bid")
+        if not batch_id:
+            return "<html>404</html>"
+
+        queryset = ScriptDelivery.get_new_work_more_by_batch_id(batch_id)
+        return dict(object_list=queryset)
+
     def get_context(self):
         name = os.path.basename(self.template_name)
         meth, ext = os.path.splitext(name)

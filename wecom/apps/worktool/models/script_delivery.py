@@ -62,6 +62,7 @@ class ScriptDelivery(BaseModel):
     src_url = Column(db.String(500), nullable=False, server_default='')                 # 原文链接
     platform = Column(db.String(500), nullable=False, server_default='')                # 平台
     uniq_id = Column(db.String(6), unique=True, nullable=False, server_default='')      # 唯一字段
+    batch_id = Column(db.String(6), unique=True, nullable=False, server_default='')     # 批次
     is_pushed = Column(db.Boolean, nullable=False, default=False, server_default='0')   # 是否推送
     group_name = Column(db.String(100), nullable=False, server_default='')              # 要推送的群组
     push_date = Column(db.String(10), nullable=False, server_default='')                # 要推送的日期
@@ -134,6 +135,56 @@ class ScriptDelivery(BaseModel):
         # for group_name, objects in groupby(queryset, key=attrgetter("group_name")):
         for obj in queryset:
             results.setdefault(obj.group_name, []).append(obj)
+
+        return results
+
+    @classmethod
+    def query_by_ai_score(cls, start_dt: datetime, end_dt: datetime, ai_score: float = 8.5, limit: int = 2):
+        """ 查询前一天高分的小说 """
+        if not ai_score:
+            return []
+
+        queryset = cls.query\
+            .filter_by(ai_score=ai_score, is_pushed=False, is_delete=False)\
+            .filter(cls.finished_time >= start_dt, cls.finished_time <= end_dt)
+
+        one = queryset.first()
+        if one and not one.batch_id:
+            batch_id = "".join(random.choices(string.ascii_letters + string.digits, k=6))
+            queryset.update({"batch_id": batch_id})
+            db.session.commit()
+
+        results = []
+        existed_work_set = set()
+        queryset = queryset.order_by(cls.pit_date.desc())
+
+        if limit:
+            queryset = queryset.limit(limit).all()
+        else:
+            queryset = queryset.all()
+
+        # 过滤可能有多个相同的小说
+        for obj in queryset:
+            key = (obj.author, obj.work_name)
+
+            if key not in existed_work_set:
+                existed_work_set.add(key)
+                results.append(obj)
+
+        return results
+
+    @classmethod
+    def get_new_work_more_by_batch_id(cls, batch_id: str):
+        results = []
+        existed_work_set = set()
+        queryset = cls.query.filter_by(batch_id=batch_id).order_by(cls.pit_date.desc()).all()
+
+        for obj in queryset:
+            key = (obj.author, obj.work_name)
+
+            if key not in existed_work_set:
+                existed_work_set.add(key)
+                results.append(obj)
 
         return results
 

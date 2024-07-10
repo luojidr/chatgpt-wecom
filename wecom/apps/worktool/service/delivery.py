@@ -3,6 +3,7 @@ import json
 import time
 import random
 import threading
+from datetime import date, datetime, timedelta
 
 from flask import current_app
 
@@ -14,8 +15,7 @@ from wecom.apps.worktool.models.script_delivery import ScriptDelivery
 from wecom.apps.worktool.models.rebot import RebotDetection
 
 from wecom.utils.log import logger
-from wecom.utils.enums import RebotType
-from wecom.utils.template import TopAuthorNewWorkTemplate, TopAuthorNewWorkContent
+from wecom.utils.template import NewWorkTemplate, NewWorkContent, NewWorkContentMore
 from wecom.utils.template import AuthorTemplate, AuthorContentCouple, AuthorContentMore
 
 
@@ -125,6 +125,15 @@ class DeliveryScript:
     def __init__(self, group_name: str = None):
         self._group_name = group_name
 
+    def _get_template_data(self, obj):
+        return dict(
+            author=obj.author, works_name=obj.work_name,
+            theme=obj.theme, core_highlight=obj.core_highlight,
+            core_idea=obj.core_idea, platform=obj.platform,
+            pit_date=obj.pit_date, ai_score=obj.ai_score,
+            detail_url=obj.detail_url, src_url=obj.src_url
+        )
+
     def get_templates(self):
         group_data = {}
         results = ScriptDelivery.get_required_script_delivery_list(self._group_name)
@@ -135,15 +144,7 @@ class DeliveryScript:
             templates = push_dict.setdefault("templates", [])
 
             for obj in objects:
-                templates.append(
-                    TopAuthorNewWorkTemplate(
-                        author=obj.author, works_name=obj.work_name,
-                        theme=obj.theme, core_highlight=obj.core_highlight,
-                        core_idea=obj.core_idea, platform=obj.platform,
-                        pit_date=obj.pit_date, ai_score=obj.ai_score,
-                        detail_url=obj.detail_url, src_url=obj.src_url
-                    )
-                )
+                templates.append(NewWorkTemplate(**self._get_template_data(obj)))
                 uniq_ids.append(obj.uniq_id)
 
         return group_data
@@ -159,7 +160,7 @@ class DeliveryScript:
                 templates = push_dict.get("templates", [])
 
                 if uniq_ids:
-                    content = TopAuthorNewWorkContent(templates).get_layout_content()
+                    content = NewWorkContent(templates).get_layout_content()
                     push_kw = dict(content=content, receiver="所有人", max_length=700)
                     result = MessageReply(group_remark=group_name).simple_push(**push_kw)
 
@@ -168,10 +169,29 @@ class DeliveryScript:
                         ScriptDelivery.update_message_id_by_uniq_ids(uniq_ids, result.get("data") or "", incr=incr)
                         time.sleep(random.randint(5, 10))
 
+    def push_by_high_score(self, group_name: str, receiver: str, ai_score: float = 8.5, limit: int = None):
+        # 查询当天同步(24小时以内)的推送的高分小说
+        today = date.today()
+        start_dt = datetime(year=today.year, month=today.month, day=today.day) - timedelta(days=1)
+        end_dt = datetime(year=today.year, month=today.month, day=today.day, hour=10, minute=0, second=0)
+
+        queryset = ScriptDelivery.query_by_ai_score(start_dt=start_dt, end_dt=end_dt, ai_score=ai_score, limit=limit)
+        templates = [NewWorkTemplate(**self._get_template_data(obj)) for obj in queryset]
+
+        if not templates:
+            content = f"喔！目前没有{ai_score}分的IP推荐给您。"
+        else:
+            content = NewWorkContentMore(
+                templates, batch_id=queryset[0].batch_id, target_score=ai_score
+            ).get_layout_content()
+
+        return MessageReply(group_remark=group_name).simple_push(content=content, receiver=receiver, max_length=700)
+
 
 class WTMessageListener:
     def __init__(self, callback_data):
         self.callback_data = callback_data
+        self.is_next_step = True
 
     @property
     def message_state(self):
@@ -194,20 +214,49 @@ class WTMessageListener:
     def listen_auto_reply_to_scrcpy(self):
         """ 监听 scrcpy 的自动回复的消息 """
         RebotDetection.update_reply_ok_by_msg_id(msg_id=self.message_id)
+        self.is_next_step = False
 
-    def listen_external_group_top_author(self):
+    def listen_external_group_top_author_by_api(self):
         """ 监听企微外部群(头部作者推送) """
         AuthorDelivery.update_push_state_by_message_id(self.message_id)
+        self.is_next_step = False
 
-    def listen_external_group_ai_evaluation(self):
+    def listen_external_group_ai_evaluation_by_api(self):
         """ 监听企微外部群(ai评分推送) """
         ScriptDelivery.update_push_state_by_message_id(self.message_id)
+        self.is_next_step = False
+
+    def listen_external_group_delivery_by_chat(self, target_score: float = 8.5):
+        """ 监听企微外部群的聊天, 并推送信息 """
+        # Sample: {
+        #     'groupName': '机器人测试群', 'fileName': '', 'atMe': 'true', 'filePath': '', 'groupRemark': '',
+        #     'spoken': '8.5', 'textType': 1, 'rawSpoken': '@小风机器人\u20058.5', 'receivedName': 'Derek', 'roomType': 1
+        # }
+        digit_pattern = re.compile(r"^\d+\.\d+$")
+
+        if self.callback_data.get("roomType") == 1:
+            group_name = self.callback_data.get("groupName")
+            receiver = self.callback_data.get("receivedName")
+            raw_spoken = self.callback_data.get("rawSpoken") or ""
+
+            if not raw_spoken.startswith("@" + settings.WT_GROUP_MASTER):
+                return
+
+            query = raw_spoken.replace("@" + settings.WT_GROUP_MASTER, "").strip()
+
+            if digit_pattern.match(query) and float(query) == target_score:
+                if group_name:
+                    DeliveryScript().push_by_high_score(group_name=group_name, receiver=receiver, ai_score=target_score)
+                    self.is_next_step = False
 
     def listen(self):
         message_state = self.message_state
+        error_code = message_state["error_code"]
         ai_group_names = [item["name"] for item in settings.PUSH_REBOT_GROUP_MAPPING]
 
-        if message_state["error_code"] == 0:
+        if error_code is None:
+            self.listen_external_group_delivery_by_chat()
+        elif error_code == 0:
             success_list = message_state["success_list"]
             if not success_list:
                 return
@@ -220,10 +269,10 @@ class WTMessageListener:
             else:
                 # message_id 肯定不一样的
                 if success_name in prompts.PUSH_REBOT_TOP_AUTHOR_LIST:
-                    self.listen_external_group_top_author()
+                    self.listen_external_group_top_author_by_api()
 
                 if success_name in ai_group_names:
-                    self.listen_external_group_ai_evaluation()
+                    self.listen_external_group_ai_evaluation_by_api()
         else:
             target_func = None
             fail_list = message_state["fail_list"]

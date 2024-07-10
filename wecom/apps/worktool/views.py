@@ -131,7 +131,11 @@ def callback_wecom():
 
     data = request.json
     logger.info("callback => data: %s", data)
-    delivery.WTMessageListener(callback_data=data).listen()
+    listener = delivery.WTMessageListener(callback_data=data)
+    listener.listen()
+
+    if not listener.is_next_step:
+        return jsonify(msg="listen finished, no process next step!", status=200, data=None)
 
     text_type = data.get("textType", 0)
     if text_type != WTTextType.TEXT.value:
@@ -169,6 +173,11 @@ def ai_evaluation_detail():
 @blueprint.route('/top_author/more', methods=['GET'])
 def top_author_more_detail():
     return render.RenderTemplate("wecom/top_author_more_detail.html").render()
+
+
+@blueprint.route('/new_work/more', methods=['GET'])
+def top_author_more_detail():
+    return render.RenderTemplate("wecom/new_work_more_detail.html").render()
 
 
 @blueprint.route("/v1/chat/completions", methods=['POST'])
