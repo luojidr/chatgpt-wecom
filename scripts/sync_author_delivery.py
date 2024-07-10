@@ -75,49 +75,57 @@ class SyncAuthorRules(RulesBase):
             logger.error(f"workflow_id: {self.workflow_id} not found")
 
     def get_author_brief(self, author, platform):
-        is_ok, is_adapt, brief, rid = False, False, "", ""
+        is_enabled, is_adapt, brief, rid = False, False, "", ""
+        retrieval_obj = AuthorRetrieval.get_author_retrieval(author, platform)
 
-        result = AuthorRetrievalByBingSearch(author, platform).get_invoked_result_by_llm()
-        rid = uniq = result["session_id"]
-        llm_content = result["content"]
+        if retrieval_obj is None:
+            result = AuthorRetrievalByBingSearch(author, platform).get_invoked_result_by_llm()
+            uniq = result["session_id"]
+            llm_content = result["content"]
 
-        # 1) 将大模型调用bingsearch的结果入库
-        AuthorRetrieval.create(
-            uniq=uniq,
-            bing_results=result["bing_results"],
-            llm_content=llm_content,
-        )
+            # 1) 解析brief
+            brief_pattern = re.compile(r"4、.*?一句话提炼.*?市场表现等的具体亮点.*?：(.*)$", re.M | re.S)
+            brief_empty_list = [
+                "由于缺乏具体的改编作品信息",
+                "暂无公开信息显示",
+                "暂无具体数据或奖项",
+                "暂无具体代表作信息",
+                "由于缺乏具体的数据、奖项名称等实体信息",
+            ]
 
-        # 2) 解析brief
-        brief_pattern = re.compile(r"4、.*?一句话提炼.*?市场表现等的具体亮点.*?：(.*)$", re.M | re.S)
-        brief_empty_list = [
-            "由于缺乏具体的改编作品信息",
-            "暂无公开信息显示",
-            "暂无具体数据或奖项",
-            "由于缺乏具体的数据、奖项名称等实体信息",
-        ]
+            # 影视改编的
+            adapt_pattern = re.compile(r"2、.*?影视改编作品的明星主演、市场表现、.*?站内热度、口碑情况.*?：(.*?)3、", re.M | re.S)
+            adapt_check_regex = re.compile(r"①《.*?》：.*?明星主演.*?市场表现.*?站内热度.*?口碑情况", re.M | re.S)
 
-        # 影视改编的
-        adapt_pattern = re.compile(r"2、.*?影视改编作品的明星主演、市场表现、.*?站内热度、口碑情况.*?：(.*?)3、", re.M | re.S)
-        adapt_check_regex = re.compile(r"①《.*?》：.*?明星主演.*?市场表现.*?站内热度.*?口碑情况", re.M | re.S)
+            brief_match = brief_pattern.search(llm_content)
+            if brief_match:
+                brief = brief_match.group(1).strip().lstrip(' -')
+                brief = brief.split("\n", 1)[0].strip()
 
-        brief_match = brief_pattern.search(llm_content)
-        if brief_match:
-            brief = brief_match.group(1).strip().lstrip(' -')
-            brief = brief.split("\n", 1)[0].strip()
-
-            if any([s in text for s in brief_empty_list]):
-                is_ok, brief = False, brief
+                if any([s in brief for s in brief_empty_list]):
+                    is_enabled = False
+                else:
+                    is_enabled = True
             else:
-                is_ok, brief = True, brief
-        else:
-            is_ok, brief = False, ""
+                is_enabled, brief = False, ""
 
-        adapt_match = adapt_pattern.search(llm_content)
-        if adapt_match and adapt_check_regex.search(adapt_match.group(1)):
-            is_adapt = True
+            adapt_match = adapt_pattern.search(llm_content)
+            if adapt_match and adapt_check_regex.search(adapt_match.group(1)):
+                is_adapt = True
 
-        return dict(is_ok=is_ok, is_adapt=is_adapt, brief=brief, rid=rid)
+            # 2) 将大模型调用bingsearch的结果入库
+            retrieval_obj = AuthorRetrieval.create(
+                author=author, platform=platform,
+                uniq=uniq, is_enabled=is_enabled,
+                brief=brief, is_adapt=is_adapt,
+                bing_results=json.dumps(result["bing_results"]),
+                llm_content=llm_content, is_delete=not is_enabled
+            )
+
+        return dict(
+            is_enabled=retrieval_obj.is_enabled, is_adapt=retrieval_obj.is_adapt,
+            brief=retrieval_obj.brief, rid=retrieval_obj.uniq
+        )
 
     def _get_workflow_run_record_id(self, author, platform):
         # 可能之前跑出的工作流，并没有获取到【作者简介】
@@ -169,12 +177,15 @@ class SyncAuthorRules(RulesBase):
                         author=author, brief=llm_result["brief"],
                         work_name=work_name, theme=item["theme"],
                         src_url=item["src_url"], platform=platform,
-                        is_pushed=False, is_workflow=False,
+                        is_pushed=False,
                         group_name=group_name, finished_time=datetime.now(),
                         push_date=push_date, batch_id=batch_id,
                         rid=llm_result["rid"], workflow_state=2,
-                        is_adapt=llm_result["is_adapt"], is_delete=not llm_result["is_ok"],
+                        is_adapt=llm_result["is_adapt"], is_delete=not llm_result["is_enabled"],
                     )
+
+                    log_args = (group_name, platform, author, work_name)
+                    logger.info("团队: %s, 平台: %s, 作者: %s, 作品: %s 已完成同步并入库", *log_args)
 
                 # # 过滤, 并且相同的工作流只执行一次(注意：是同用户下的具体工作流的执行记录)
                 # rid = self._get_workflow_run_record_id(author, platform)
