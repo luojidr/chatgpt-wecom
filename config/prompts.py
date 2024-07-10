@@ -48,6 +48,7 @@ TOP_AUTHOR_PROMPT = """
 对啦，如果“4、一句话提炼影视化作品及其原著的市场表现等的具体亮点：”里，没有影视化作品，就提一下作者有几部代表作，比如“尤四姐，晋江文学城作者，代表作有《浮图塔》等。”如果有，一定要把影视剧名称也列出来，哪怕没有具体数据和亮点。
 """
 
+WT_TEST_GROUP_NAME = "有风共创"
 WT_GROUP_PROMPTS = {
     "机器人测试群": DEFAULT_SYSTEM_PROMPT,
     "宽厚IP智能推荐群": DEFAULT_SYSTEM_PROMPT,
@@ -81,7 +82,7 @@ WT_GROUP_PROMPTS = {
     "陈晶晶团队IP智能推荐群": DEFAULT_SYSTEM_PROMPT,
     "曾金韬团队IP智能推荐群": DEFAULT_SYSTEM_PROMPT,
 
-    "有风共创": DEFAULT_SYSTEM_PROMPT,
+    WT_TEST_GROUP_NAME: DEFAULT_SYSTEM_PROMPT,
 }
 
 PUSH_REBOT_TOP_AUTHOR_LIST = list(WT_GROUP_PROMPTS.keys())
