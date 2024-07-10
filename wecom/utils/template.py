@@ -143,7 +143,7 @@ class NewWorkContentMore(TemplateBase):
             ⑦平台：{platform}
         """
     another_template = """
-           1、{author}《{works_name}》
+           2、{author}《{works_name}》
             ①题材类型：{theme}
             ②核心亮点：{core_highlight}
             ③核心创意：{core_idea}
