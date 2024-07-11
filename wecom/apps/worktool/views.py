@@ -176,7 +176,7 @@ def top_author_more_detail():
 
 
 @blueprint.route('/new_work/more', methods=['GET'])
-def top_author_more_detail():
+def new_work_more_detail():
     return render.RenderTemplate("wecom/new_work_more_detail.html").render()
 
 

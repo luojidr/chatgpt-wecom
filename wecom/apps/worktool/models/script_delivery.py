@@ -177,7 +177,7 @@ class ScriptDelivery(BaseModel):
     def get_new_work_more_by_batch_id(cls, batch_id: str):
         results = []
         existed_work_set = set()
-        queryset = cls.query.filter_by(batch_id=batch_id).order_by(cls.pit_date.desc()).all()
+        queryset = cls.query.filter_by(batch_id=batch_id, is_delete=False).order_by(cls.pit_date.desc()).all()
 
         for obj in queryset:
             key = (obj.author, obj.work_name)

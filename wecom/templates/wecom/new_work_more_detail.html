@@ -1,10 +1,133 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>高分IP推荐</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
 
+        .container {
+            width: 90%;
+            margin: auto;
+            overflow: hidden;
+        }
+
+        h2 {
+            text-align: center;
+            padding: 20px 0;
+            color: #333;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        th, td {
+            padding: 15px;
+            text-align: left;
+            border: 1px solid #ddd; /* 添加边框 */
+        }
+
+        th {
+            background-color: #e0e0e0;
+            color: black;
+            text-align: center;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+
+        td a {
+            color: #007BFF;
+            text-decoration: none;
+        }
+
+        td a:hover {
+            text-decoration: none;
+        }
+
+        /* 响应式设计 */
+        @media screen and (max-width: 600px) {
+            table, thead, tbody, th, td, tr {
+                display: block;
+            }
+
+            thead tr {
+                display: none;
+            }
+
+            tr {
+                margin-bottom: 10px;
+            }
+
+            td {
+                text-align: right;
+                padding-left: 50%;
+                position: relative;
+                border: none; /* 移除响应式下的边框 */
+            }
+
+            td::before {
+                content: attr(data-label);
+                position: absolute;
+                left: 10px;
+                width: 45%;
+                padding-right: 10px;
+                white-space: nowrap;
+                text-align: left;
+                font-weight: bold;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h2>更多高分IP推荐</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>作者</th>
+                    <th>作品IP</th>
+                    <th>开坑时间</th>
+                    <th>题材类型</th>
+                    <th>核心亮点</th>
+                    <th>核心创意</th>
+                    <th>AI评分与链接</th>
+                    <th>平台与链接</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for obj in object_list %}
+                    <tr>
+                        <td data-label="作者">{{ obj.author }}</td>
+                        <td data-label="作品IP">{{ obj.work_name }}</td>
+                        <td data-label="开坑时间">{{ obj.pit_date }}</td>
+                        <td data-label="题材类型">{{ obj.theme }}</td>
+                        <td data-label="核心亮点">{{ obj.core_highlight }}</td>
+                        <td data-label="核心创意">{{ obj.core_idea }}</td>
+                        <td data-label="AI评分与链接"><a href="{{ obj.detail_url }}" target="_blank">{{ obj.ai_score }}</a></td>
+                        <td data-label="平台与链接"><a href="{{ obj.src_url }}" target="_blank">{{ obj.platform }}</a></td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </body>
+
 </html>
