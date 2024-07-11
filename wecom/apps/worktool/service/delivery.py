@@ -226,8 +226,8 @@ class WTMessageListener:
         ScriptDelivery.update_push_state_by_message_id(self.message_id)
         self.is_next_step = False
 
-    def listen_external_group_delivery_by_chat(self, target_score: float = 8.5):
-        """ 监听企微外部群的聊天, 并推送信息 """
+    def listen_external_group_ip_by_chat(self, target_score: float = 8.5):
+        """ 监听企微外部群的聊天(高分IP推荐), 并推送信息 """
         # Sample: {
         #     'groupName': '机器人测试群', 'fileName': '', 'atMe': 'true', 'filePath': '', 'groupRemark': '',
         #     'spoken': '8.5', 'textType': 1, 'rawSpoken': '@小风机器人\u20058.5', 'receivedName': 'Derek', 'roomType': 1
@@ -255,7 +255,7 @@ class WTMessageListener:
         ai_group_names = [item["name"] for item in settings.PUSH_REBOT_GROUP_MAPPING]
 
         if error_code is None:
-            self.listen_external_group_delivery_by_chat()
+            self.listen_external_group_ip_by_chat()
         elif error_code == 0:
             success_list = message_state["success_list"]
             if not success_list:

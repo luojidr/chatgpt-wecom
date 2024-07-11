@@ -148,10 +148,16 @@ class ScriptDelivery(BaseModel):
             .filter_by(ai_score=ai_score, is_pushed=False, is_delete=False)\
             .filter(cls.finished_time >= start_dt, cls.finished_time <= end_dt)
 
-        one = queryset.first()
-        if one and not one.batch_id:
-            batch_id = "".join(random.choices(string.ascii_letters + string.digits, k=6))
-            queryset.update({"batch_id": batch_id})
+        # 生成批次id
+        batch_ids = [obj.batch_id for obj in queryset.all() if obj.batch_id]
+        if len(batch_ids) != queryset.count():
+            # 找到其中的批次id不为空的数据
+            if batch_ids:
+                _batch_id = batch_ids[0]
+            else:
+                _batch_id = "".join(random.choices(string.ascii_letters + string.digits, k=6))
+
+            queryset.update({"batch_id": _batch_id})
             db.session.commit()
 
         results = []
