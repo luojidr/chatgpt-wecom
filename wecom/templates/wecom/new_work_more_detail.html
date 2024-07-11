@@ -102,6 +102,7 @@
         <table>
             <thead>
                 <tr>
+                    <th>序号</th>
                     <th>作者</th>
                     <th>作品IP</th>
                     <th>开坑时间</th>
@@ -115,6 +116,7 @@
             <tbody>
                 {% for obj in object_list %}
                     <tr>
+                        <td data-label="序号">{{ loop.index }}</td>
                         <td data-label="作者">{{ obj.author }}</td>
                         <td data-label="作品IP">{{ obj.work_name }}</td>
                         <td data-label="开坑时间">{{ obj.pit_date }}</td>

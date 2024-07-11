@@ -102,6 +102,7 @@
         <table>
             <thead>
                 <tr>
+                    <th>序号</th>
                     <th>作者</th>
                     <th>新坑名称</th>
                     <th>题材类型</th>
@@ -112,6 +113,7 @@
             <tbody>
                 {% for obj in object_list %}
                     <tr>
+                        <td data-label="序号">{{ loop.index }}</td>
                         <td data-label="作者">{{ obj.author }}</td>
                         <td data-label="新坑名称">{{ obj.work_name }}</td>
                         <td data-label="题材类型">{{ obj.theme }}</td>
