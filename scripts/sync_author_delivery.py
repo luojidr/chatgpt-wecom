@@ -4,6 +4,7 @@ import string
 import random
 import traceback
 from datetime import datetime, date
+from typing import Tuple
 
 
 import requests
@@ -22,6 +23,9 @@ from wecom.utils.llm import AuthorRetrievalByBingSearch
 
 
 class SyncAuthorRules(RulesBase):
+    # 辛迪加影视IP智能推荐群
+    EXCLUDE_SYNDICATE_IP_TEAM = "辛迪加影视IP智能推荐群"
+
     def __init__(self):
         self.max_seconds = 1 * 24 * 60 * 60
 
@@ -73,6 +77,19 @@ class SyncAuthorRules(RulesBase):
                 logger.error(traceback.format_exc())
         else:
             logger.error(f"workflow_id: {self.workflow_id} not found")
+
+    def exclude_rules_to_teams(self, group_name, theme) -> Tuple[bool, str]:
+        remark = ""
+        is_exclude = False
+        theme_list = [s.strip() for s in theme.split("-") if s.strip()]
+
+        if group_name == self.EXCLUDE_SYNDICATE_IP_TEAM and any(["纯爱" == s for s in theme_list]):
+            # 辛迪加团队，不需要纯爱类型的头部作者小说
+            # eg: 原创-纯爱-架空历史-仙侠; 原创-纯爱-幻想未来-爱情; 原创-纯爱-近代现代-爱情;......
+            is_exclude = True
+            remark = "辛迪加团队，不需要纯爱类型"
+
+        return is_exclude, remark
 
     def get_author_brief(self, author, platform):
         is_enabled, is_adapt, brief, rid = False, False, "", ""
@@ -172,16 +189,22 @@ class SyncAuthorRules(RulesBase):
 
                 if group_instance is None:
                     llm_result = self.get_author_brief(author, platform)
+                    is_exclude, remark = self.exclude_rules_to_teams(group_name, item["theme"])
+
+                    if is_exclude:
+                        is_delete = is_exclude
+                    else:
+                        is_delete = not llm_result["is_enabled"]
 
                     group_instance = AuthorDelivery.create(
                         author=author, brief=llm_result["brief"],
                         work_name=work_name, theme=item["theme"],
                         src_url=item["src_url"], platform=platform,
-                        is_pushed=False,
+                        is_pushed=False, remark=remark,
                         group_name=group_name, finished_time=datetime.now(),
                         push_date=push_date, batch_id=batch_id,
                         rid=llm_result["rid"], workflow_state=2,
-                        is_adapt=llm_result["is_adapt"], is_delete=not llm_result["is_enabled"],
+                        is_adapt=llm_result["is_adapt"], is_delete=is_delete,
                     )
 
                     log_args = (group_name, platform, author, work_name)

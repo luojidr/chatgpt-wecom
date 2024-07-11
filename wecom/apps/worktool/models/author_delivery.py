@@ -35,6 +35,7 @@ class AuthorDelivery(BaseModel):
     push_date = Column(db.String(10), nullable=False, server_default='')                    # 要推送的日期
     batch_id = Column(db.String(6), unique=True, nullable=False, server_default='')         # 批次
     message_id = Column(db.String(50), unique=True, nullable=False, server_default='')      # 推送消息id
+    remark = Column(db.String(200), unique=True, nullable=False, server_default='')         # 备注
     is_delete = Column(db.Boolean, nullable=False, default=False, server_default='0')       # 是否删除
     is_adapt = Column(db.Boolean, nullable=False, default=False, server_default='0')        # 是否有影视改编作品
     retry_times = Column(db.Integer, nullable=False, default=0, server_default='0')         # 重试次数
@@ -73,7 +74,7 @@ class AuthorDelivery(BaseModel):
 
     @classmethod
     def get_more_authors_by_batch_id(cls, batch_id):
-        return cls.query.filter_by(batch_id=batch_id).order_by(cls.id.asc()).offset(1).all()
+        return cls.query.filter_by(batch_id=batch_id, is_delete=False).order_by(cls.id.asc()).offset(1).all()
 
     @classmethod
     def get_running_rids_by_workflow_state(cls, workflow_state):
