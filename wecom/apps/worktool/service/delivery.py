@@ -226,7 +226,7 @@ class WTMessageListener:
         ScriptDelivery.update_push_state_by_message_id(self.message_id)
         self.is_next_step = False
 
-    def listen_external_group_ip_by_chat(self, target_score: float = 8.5):
+    def listen_external_group_ip_by_chat(self, min_score: float = 8.5):
         """ 监听企微外部群的聊天(高分IP推荐), 并推送信息 """
         # Sample: {
         #     'groupName': '机器人测试群', 'fileName': '', 'atMe': 'true', 'filePath': '', 'groupRemark': '',
@@ -244,9 +244,10 @@ class WTMessageListener:
 
             query = raw_spoken.replace("@" + settings.WT_GROUP_MASTER, "").strip()
 
-            if digit_pattern.match(query) and float(query) == target_score:
+            # 只推送大于等于 min_score 分的IP作品
+            if digit_pattern.match(query) and float(query) >= min_score:
                 if group_name:
-                    DeliveryScript().push_by_high_score(group_name=group_name, receiver=receiver, ai_score=target_score)
+                    DeliveryScript().push_by_high_score(group_name=group_name, receiver=receiver, ai_score=float(query))
                     self.is_next_step = False
 
     def listen(self):
