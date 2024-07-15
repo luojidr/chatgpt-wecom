@@ -170,14 +170,16 @@ class ScriptDelivery(BaseModel):
                 cls.is_delete == False,
             )
 
-        if operator == "eq":
-            queryset = queryset.filter(cls.ai_score == ai_score)
-        elif operator == "gte":
-            queryset = queryset.filter(cls.ai_score >= ai_score)
+        db_results = []
+        for obj in queryset.order_by(cls.pit_date.asc()).all():
+            if operator == "eq" and obj.ai_score == ai_score:
+                db_results.append(obj)
+            elif operator == "gte" and obj.ai_score >= ai_score:
+                db_results.append(obj)
 
         # 生成批次id
-        batch_ids = [obj.batch_id for obj in queryset.order_by(cls.pit_date.asc()).all() if obj.batch_id]
-        if len(batch_ids) != queryset.count() or len(set(batch_ids)) != 1:
+        batch_ids = [obj.batch_id for obj in db_results if obj.batch_id]
+        if len(batch_ids) != len(db_results) or len(set(batch_ids)) != 1:
             # 找到其中的批次id不为空的数据
             if batch_ids:
                 _batch_id = batch_ids[0]
@@ -189,12 +191,12 @@ class ScriptDelivery(BaseModel):
 
         results = []
         existed_work_set = set()
-        queryset = queryset.order_by(cls.pit_date.desc())
+        db_results.sort(key=attrgetter("pit_date"), reverse=True)
 
         if limit:
-            queryset = queryset.limit(limit).all()
+            queryset = db_results[:limit]
         else:
-            queryset = queryset.all()
+            queryset = db_results
 
         # 过滤可能有多个相同的小说
         for obj in queryset:
