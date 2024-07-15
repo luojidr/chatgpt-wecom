@@ -1,7 +1,9 @@
 import os
 import re
 from datetime import date
-from typing import List
+from typing import List, Optional
+
+from wecom.apps.worktool.models.script_delivery import ScriptDelivery
 
 
 class TemplateBase:
@@ -100,7 +102,12 @@ class NewWorkContent(TemplateBase):
     def __init__(self, templates: List[NewWorkTemplate]):
         self.templates = templates
 
-    def get_layout_content(self, include_tips=True):
+    @staticmethod
+    def has_tips_with_gte_score():
+        queryset = ScriptDelivery.query_by_ai_score(operator="gte", limit=None)
+        return len(queryset) > 0
+
+    def get_layout_content(self):
         content_list = []
         pattern = re.compile(r'\{(.*?)\}')
         template_items = self.get_aligned_template_items()
@@ -124,7 +131,11 @@ class NewWorkContent(TemplateBase):
             content_list.append("\n".join(text_list) + "\n")
 
         content = self.title + "\n".join(content_list).strip()
-        return content + self.tips if include_tips else content
+
+        if self.has_tips_with_gte_score():
+            content = content + self.tips
+
+        return content
 
 
 class NewWorkContentMore(TemplateBase):

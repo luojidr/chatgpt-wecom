@@ -170,16 +170,12 @@ class DeliveryScript:
                         time.sleep(random.randint(5, 10))
 
     def push_by_high_score(self, group_name: str, receiver: str, ai_score: float = 8.5, limit: int = None):
-        # 查询当天同步(24小时以内)的推送的高分小说
-        today = date.today()
-        start_dt = datetime(year=today.year, month=today.month, day=today.day) - timedelta(days=1)
-        end_dt = datetime(year=today.year, month=today.month, day=today.day, hour=10, minute=0, second=0)
-
-        queryset = ScriptDelivery.query_by_ai_score(start_dt=start_dt, end_dt=end_dt, ai_score=ai_score, limit=limit)
+        # 查询前一个工作日到当天工作日中大于等于8.5的高分小说
+        queryset = ScriptDelivery.query_by_ai_score(ai_score=ai_score, limit=limit)
         templates = [NewWorkTemplate(**self._get_template_data(obj)) for obj in queryset]
 
         if not templates:
-            content = f"喔！目前没有{ai_score}分的IP推荐给您。"
+            content = f"今天没有筛到{ai_score}分的IP!"
         else:
             content = NewWorkContentMore(
                 templates, batch_id=queryset[0].batch_id, target_score=ai_score

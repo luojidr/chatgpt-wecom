@@ -10,6 +10,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import load_only
 from sqlalchemy import Column, Integer, String, Float, Enum, Text
 
+from scripts.base import RulesBase
 from .workflowrunrecord import WorkflowRunRecord
 from wecom.core.database import db, Column, BaseModel
 
@@ -66,7 +67,7 @@ class ScriptDelivery(BaseModel):
     is_pushed = Column(db.Boolean, nullable=False, default=False, server_default='0')   # 是否推送
     group_name = Column(db.String(100), nullable=False, server_default='')              # 要推送的群组
     push_date = Column(db.String(10), nullable=False, server_default='')                # 要推送的日期
-    target_ai_score = Column(db.Float,  nullable=False, server_default='0.0')           # 优先推送的AI评分
+    target_ai_score = Column(db.Float, nullable=False, server_default='0.0')            # 优先推送的AI评分
     message_id = Column(db.String(50), unique=True, nullable=False, server_default='')  # 推送消息id
     retry_times = Column(db.Integer, nullable=False, default=0, server_default='0')     # 推送失败尝试次数
     is_delete = Column(db.Boolean, nullable=False, default=False, server_default='0')   # 是否删除
@@ -139,18 +140,44 @@ class ScriptDelivery(BaseModel):
         return results
 
     @classmethod
-    def query_by_ai_score(cls, start_dt: datetime, end_dt: datetime, ai_score: float = 8.5, limit: int = 2):
-        """ 查询前一天高分的小说 """
+    def query_by_ai_score(cls,
+                          start_dt: Optional[datetime] = None,
+                          end_dt: Optional[datetime] = None,
+                          ai_score: Optional[float] = 8.5,
+                          operator: str = "eq",
+                          limit: Optional[int] = None
+                          ):
+        """ 默认查询前一个工作日到当天工作日中大于等于8.5的高分小说 """
+        assert (start_dt and end_dt) or (start_dt is None and end_dt is None), "开始时间和结束时间错误"
+        assert operator in ["eq", "gte"], "查询条件错误"
+
         if not ai_score:
             return []
 
+        if start_dt is None and end_dt is None:
+            now = datetime.now()
+            last_workday = RulesBase().get_previous_workday(dt=now)
+
+            # 爬虫及AI评分工作流一般在6:30之前结束，如果用户在第二天凌时至6:30，则可能会出错误
+            start_dt = datetime(year=last_workday.year, month=last_workday.month, day=last_workday.day)
+            end_dt = datetime(year=now.year, month=now.month, day=now.day, hour=6, minute=30, second=0)
+
         queryset = cls.query\
-            .filter_by(ai_score=ai_score, is_pushed=False, is_delete=False)\
-            .filter(cls.finished_time >= start_dt, cls.finished_time <= end_dt)
+            .filter(
+                cls.finished_time >= start_dt,
+                cls.finished_time <= end_dt,
+                cls.is_pushed == False,
+                cls.is_delete == False,
+            )
+
+        if operator == "eq":
+            queryset = queryset.filter(cls.ai_score == ai_score)
+        elif operator == "gte":
+            queryset = queryset.filter(cls.ai_score >= ai_score)
 
         # 生成批次id
-        batch_ids = [obj.batch_id for obj in queryset.all() if obj.batch_id]
-        if len(batch_ids) != queryset.count():
+        batch_ids = [obj.batch_id for obj in queryset.order_by(cls.pit_date.asc()).all() if obj.batch_id]
+        if len(batch_ids) != queryset.count() or len(set(batch_ids)) != 1:
             # 找到其中的批次id不为空的数据
             if batch_ids:
                 _batch_id = batch_ids[0]
@@ -249,13 +276,11 @@ class ScriptDelivery(BaseModel):
     def update_message_id_by_uniq_ids(cls, uniq_ids: List[str], message_id: str, incr: bool = False):
         cls.query.filter(cls.uniq_id.in_(uniq_ids)).update(dict(message_id=message_id))
         if incr:
-            cls.query.filter(cls.uniq_id.in_(uniq_ids)).update({cls.retry_times: cls.retry_times + 1}, synchronize_session=False)
+            cls.query.filter(cls.uniq_id.in_(uniq_ids)).update({cls.retry_times: cls.retry_times + 1},
+                                                               synchronize_session=False)
         db.session.commit()
 
     @classmethod
     def update_push_date_by_ids(cls, ids: List[int], push_date: str):
         cls.query.filter(cls.id.in_(ids)).update(dict(push_date=push_date))
         db.session.commit()
-
-
-
