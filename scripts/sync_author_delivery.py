@@ -4,7 +4,7 @@ import string
 import random
 import traceback
 from datetime import datetime, date
-from typing import Tuple
+from typing import Tuple, Optional
 
 
 import requests
@@ -78,16 +78,19 @@ class SyncAuthorRules(RulesBase):
         else:
             logger.error(f"workflow_id: {self.workflow_id} not found")
 
-    def exclude_rules_to_teams(self, group_name, theme) -> Tuple[bool, str]:
+    def exclude_rules_to_teams(self, group_name: str, theme: str) -> Tuple[bool, str]:
         remark = ""
         is_exclude = False
         theme_list = [s.strip() for s in theme.split("-") if s.strip()]
 
-        if group_name == self.EXCLUDE_SYNDICATE_IP_TEAM and any(["纯爱" == s for s in theme_list]):
+        # 所有团队，都不需要纯爱类型的头部作者小说（之前仅 辛迪加团队）
+        # eg: 原创-纯爱-架空历史-仙侠; 原创-纯爱-幻想未来-爱情; 原创-纯爱-近代现代-爱情;......
+
+        if any(["纯爱" == s for s in theme_list]):
             # 辛迪加团队，不需要纯爱类型的头部作者小说
             # eg: 原创-纯爱-架空历史-仙侠; 原创-纯爱-幻想未来-爱情; 原创-纯爱-近代现代-爱情;......
             is_exclude = True
-            remark = "辛迪加团队，不需要纯爱类型"
+            remark = f"{group_name}，不需要纯爱类型"
 
         return is_exclude, remark
 
