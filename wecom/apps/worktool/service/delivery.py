@@ -224,6 +224,8 @@ class WTMessageListener:
 
     def listen_external_group_ip_by_chat(self, min_score: float = 8.5):
         """ 监听企微外部群的聊天(高分IP推荐), 并推送信息 """
+        # 如果对今日其他赛道【8.5分新IP（题材不限）】感兴趣，请@我，并回复8.5获取
+        # 只监听上述有回复机器人的8.5， 8.6 高分IP推荐的消息
         # Sample: {
         #     'groupName': '机器人测试群', 'fileName': '', 'atMe': 'true', 'filePath': '', 'groupRemark': '',
         #     'spoken': '8.5', 'textType': 1, 'rawSpoken': '@小风机器人\u20058.5', 'receivedName': 'Derek', 'roomType': 1
