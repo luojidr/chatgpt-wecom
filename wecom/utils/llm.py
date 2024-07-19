@@ -67,8 +67,7 @@ class AuthorRetrievalByBingSearch:
 
             value_list = res['webPages']["value"]
             snippets.extend([page['snippet'] for page in value_list])
-
-            results = pool.map(self.get_content, [page['cachedPageUrl'] for page in value_list])
+            results = pool.map(self.get_content, [page['cachedPageUrl'] for page in value_list if 'cachedPageUrl' in page])
             contents.extend(results)
 
         pool.close()

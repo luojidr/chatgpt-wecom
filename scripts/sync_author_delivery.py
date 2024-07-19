@@ -210,8 +210,7 @@ class SyncAuthorRules(RulesBase):
                         is_adapt=llm_result["is_adapt"], is_delete=is_delete,
                     )
 
-                    log_args = (group_name, platform, author, work_name)
-                    logger.info("团队: %s, 平台: %s, 作者: %s, 作品: %s 已完成同步并入库", *log_args)
+                    logger.info(f"团队: {group_name}, 平台: {platform}, 作者: {author}, 作品: {work_name} 已完成同步并入库")
 
                 # # 过滤, 并且相同的工作流只执行一次(注意：是同用户下的具体工作流的执行记录)
                 # rid = self._get_workflow_run_record_id(author, platform)
