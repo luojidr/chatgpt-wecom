@@ -147,7 +147,7 @@ class ScriptDelivery(BaseModel):
                           operator: str = "eq",
                           limit: Optional[int] = None
                           ):
-        """ 默认查询前一个工作日到当天工作日中大于等于8.5的高分小说 """
+        """ 默认查询前半个月到当天工作日中大于等于8.5的高分小说 """
         assert (start_dt and end_dt) or (start_dt is None and end_dt is None), "开始时间和结束时间错误"
         assert operator in ["eq", "gte"], "查询条件错误"
 
@@ -156,26 +156,22 @@ class ScriptDelivery(BaseModel):
 
         if start_dt is None and end_dt is None:
             now = datetime.now()
-            last_workday = RulesBase().get_previous_workday(dt=now)
+            # last_workday = RulesBase().get_previous_workday(dt=now)
 
             # 爬虫及AI评分工作流一般在6:30之前结束，如果用户在第二天凌时至6:30，则可能会出错误
-            start_dt = datetime(year=last_workday.year, month=last_workday.month, day=last_workday.day)
             end_dt = datetime(year=now.year, month=now.month, day=now.day, hour=6, minute=30, second=0)
+            start_dt = (end_dt - timedelta(days=15)).replace(hour=6, minute=30, second=0, microsecond=0)
 
-        queryset = cls.query\
+        queryset = cls.query \
             .filter(
-                cls.finished_time >= start_dt,
-                cls.finished_time <= end_dt,
-                cls.is_pushed == False,
-                cls.is_delete == False,
-            )
+            cls.finished_time >= start_dt,
+            cls.finished_time <= end_dt,
+            cls.is_delete == False,
+            cls.ai_score >= ai_score  # 添加过滤条件
+        )
 
-        db_results = []
-        for obj in queryset.order_by(cls.pit_date.asc()).all():
-            if operator == "eq" and obj.ai_score == ai_score:
-                db_results.append(obj)
-            elif operator == "gte" and obj.ai_score >= ai_score:
-                db_results.append(obj)
+        # 直接查询并排序
+        db_results = queryset.order_by(cls.pit_date.asc()).all()
 
         # 生成批次id
         batch_ids = [obj.batch_id for obj in db_results if obj.batch_id]

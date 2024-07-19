@@ -97,7 +97,7 @@ class NewWorkContent(TemplateBase):
         {order}出处链接：{src_url}
         {order}平台：{platform}
     """
-    tips = "\n\n如果对今日其他赛道【8.5分新IP（题材不限）】感兴趣，请@我，并回复8.5获取"
+    tips = "\n\n近半个月所有题材中【评分≥8.5】的新IP合集，也在持续更新中。如需获取最新合集，请@我，并回复“8.5”"
 
     def __init__(self, templates: List[NewWorkTemplate]):
         self.templates = templates
