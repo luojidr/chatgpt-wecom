@@ -7,17 +7,21 @@ export APP_ENV=PROD
 PIDS=$(pgrep -f 'runserver:app')
 
 if [ -n "$PIDS" ]; then
-    echo "Found existing gunicorn processes with PIDs: $PIDS. Terminating..."
+    echo "发现现有的 gunicorn 进程，PID: $PIDS。正在终止..."
     # 杀掉这些进程
     kill -9 $PIDS
-    if [ $? -eq 0 ]; then
-        echo "Existing gunicorn processes terminated successfully."
-    else
-        echo "Failed to terminate existing gunicorn processes."
+    sleep 2  # 给进程一些时间来终止
+
+    # 再次确认是否有未被杀掉的进程
+    PIDS_REMAIN=$(pgrep -f 'runserver:app')
+    if [ -n "$PIDS_REMAIN" ]; then
+        echo "一些 gunicorn 进程仍在运行: $PIDS_REMAIN。退出中。"
         exit 1
+    else
+        echo "现有的 gunicorn 进程已成功终止。"
     fi
 else
-    echo "No existing gunicorn processes found."
+    echo "未发现现有的 gunicorn 进程。"
 fi
 
 # 启动 gunicorn 服务器
@@ -25,7 +29,7 @@ fi
 
 # 检查是否启动成功，并给予提示
 if [ $? -eq 0 ]; then
-    echo "Server started successfully"
+    echo "服务器启动成功"
 else
-    echo "Failed to start the server"
+    echo "服务器启动失败"
 fi
