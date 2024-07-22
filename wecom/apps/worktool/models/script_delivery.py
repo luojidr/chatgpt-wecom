@@ -159,7 +159,7 @@ class ScriptDelivery(BaseModel):
             # last_workday = RulesBase().get_previous_workday(dt=now)
 
             # 爬虫及AI评分工作流一般在6:30之前结束，如果用户在第二天凌时至6:30，则可能会出错误
-            end_dt = datetime(year=now.year, month=now.month, day=now.day, hour=6, minute=30, second=0)
+            end_dt = datetime(year=now.year, month=now.month, day=now.day, hour=10, minute=30, second=0)
             start_dt = (end_dt - timedelta(days=15)).replace(hour=6, minute=30, second=0, microsecond=0)
 
         queryset = cls.query \

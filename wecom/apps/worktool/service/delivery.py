@@ -170,7 +170,7 @@ class DeliveryScript:
                         time.sleep(random.randint(5, 10))
 
     def push_by_high_score(self, group_name: str, receiver: str, ai_score: float = 8.5, limit: int = None):
-        # 查询前一个工作日到当天工作日中大于等于8.5的高分小说
+        # 查询前15天到当天工作日中大于等于8.5的高分小说
         queryset = ScriptDelivery.query_by_ai_score(ai_score=ai_score, limit=limit)
         templates = [NewWorkTemplate(**self._get_template_data(obj)) for obj in queryset]
 
