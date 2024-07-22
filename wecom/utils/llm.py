@@ -38,7 +38,7 @@ class AuthorRetrievalByBingSearch:
 
     @retry(stop=stop_after_attempt(max_attempt_number=3))
     def get_bing_results(self, query: str, subscription_key: str = None, timeout: int = 5):
-        params = {"q": query, "textDecorations": True, "textFormat": "HTML", 'count': 10, "mkt": "zh-CN"}
+        params = {"q": query, "textDecorations": True, "textFormat": "HTML", 'count': 1, "mkt": "zh-CN"}
         response = requests.get(
             self._api_path,
             headers={
@@ -83,7 +83,7 @@ class AuthorRetrievalByBingSearch:
             "author": self._author,
             "platform": self._platform
         }
-        query = "平台:{platform},作者:{author},最新影视改编作品的市场表现".format(**fmt_kwargs)
+        query = f'百度百科: 作者:{self._author}'
 
         result_dict = self.search_by_bing(query=query)
         fmt_kwargs.update({"prompt": result_dict["text"]})
@@ -98,3 +98,26 @@ class AuthorRetrievalByBingSearch:
             content=response.choices[0].message.content
         )
 
+
+if __name__ == '__main__':
+    import re
+    import pandas as pd
+    authors = [
+        "白羽摘雕弓",
+        "藤萝为枝",
+    ]
+    platform = "晋江"
+    data = {'作者': [], '介绍': []}
+    results = []
+    for author in authors:
+        result = AuthorRetrievalByBingSearch(author, platform).get_invoked_result_by_llm()
+        llm_content = result["content"]
+        brief_pattern = re.compile(r"4、.*?一句话提炼.*?市场表现等的具体亮点.*?：(.*)$", re.M | re.S)
+        brief_match = brief_pattern.search(llm_content)
+        if brief_match:
+            brief = brief_match.group(1).strip().lstrip(' -')
+            brief = brief.split("\n", 1)[0].strip()
+            print(brief)
+            results.append({'作者': author, '介绍': brief})
+    df = pd.DataFrame(results)
+    df.to_excel("authors_info.xlsx", index=False)
