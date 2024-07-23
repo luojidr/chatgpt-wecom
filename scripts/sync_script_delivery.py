@@ -171,7 +171,6 @@ class SyncScriptDeliveryRules(RulesBase):
         log_msg = "save_db ==>> 群: {group_name}, rid: {rid}, 作者: {author}, 作品: {work_name}, AI评分：{ai_score}"
 
         for group_name, iterator in itertools.groupby(ok_results, key=itemgetter("group_name")):
-            values = []
             author_books_set = set()    # 对同一个团队进行再次去除重(作者+书名)
 
             for item in list(iterator):
@@ -183,13 +182,11 @@ class SyncScriptDeliveryRules(RulesBase):
                 # 出处链接、作者、作品名必须要存在
                 if author and work_name and src_url and uniq_key not in author_books_set:
                     author_books_set.add(uniq_key)
-                    values.append(item)
 
-            for each_item in values:
-                logger.info(log_msg.format(**each_item))
+                logger.info(log_msg.format(**item))
 
-                OutputDelivery.create(rid=each_item["rid"])
-                ScriptDelivery.create(**each_item)
+                OutputDelivery.create(rid=item["rid"])
+                ScriptDelivery.create(**item)
 
         # 数据落库之后，综合 T-1,T-2 等数据统一计算下一次要推送的日期(节假日不推送)
         self.compute_next_push_date()
