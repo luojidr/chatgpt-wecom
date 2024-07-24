@@ -2626,7 +2626,9 @@ PUSH_REBOT_GROUP_MAPPING = [
         "name": "羿格工作室IP智能推荐群",
         "target_ai_score": 8.4,
         "matching_list": [
-        ]
+            {"晋江小说": ["all"]},
+            {"起点小说": ["all"]}
+        ],
     },
 
     # 李杜团队IP智能推荐群
