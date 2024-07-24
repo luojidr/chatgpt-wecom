@@ -277,15 +277,39 @@ class AuthorContentMore(TemplateBase):
         self.batch_id = batch_id
 
     def get_layout_content(self):
+        main_author = self.templates[0]
+        other_authors = self.templates[1:]
+
+        main_kwargs = dict(
+            author=main_author.author,
+            works_name=main_author.works_name,
+            theme=main_author.theme,
+            platform=main_author.platform,
+            src_url=main_author.src_url,
+            brief=main_author.brief
+        )
+
+        other_authors_info = []
+        for author in other_authors:
+            other_authors_info.append({
+                "author": author.author,
+                "works_name": author.works_name,
+                "theme": author.theme,
+                "platform": author.platform,
+                "src_url": author.src_url,
+                "brief": author.brief
+            })
+
         kwargs = dict(
             author_cnt=len(self.templates),
-            authors="、".join([template.author for template in self.templates[1:]]),
+            authors="、".join([template.author for template in other_authors]),
             detail_url=os.environ["MY_HOST"] + "/wecom/top_author/more?bid=%s" % self.batch_id,
-            **self.templates[0].__dict__
+            **main_kwargs
         )
 
         template_items = self.get_aligned_template_items()
         new_template = "\n".join(template_items)
 
-        return self.title + new_template.format(**kwargs)
+        content = self.title + new_template.format(**kwargs)
+        return content
 
