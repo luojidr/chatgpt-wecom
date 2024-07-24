@@ -3,7 +3,7 @@ import re
 import os.path
 import itertools
 from operator import itemgetter, attrgetter
-from datetime import timedelta, date
+from datetime import timedelta, date, datetime
 from typing import Dict, List, Any
 
 from sqlalchemy import or_
@@ -213,6 +213,20 @@ class SyncScriptDeliveryRules(RulesBase):
             other_ids = [obj.id for obj in objects[2:]]
             ScriptDelivery.update_push_date_by_ids(ids=other_ids, push_date="")
 
+    def is_half_year(self, input_data):
+        if input_data:
+            pit_date = datetime.strptime(input_data, "%Y-%m-%d %H:%M:%S")
+            # 获取当前日期时间
+            current_date = datetime.now()
+            # 计算半年前的日期时间
+            half_year_ago = current_date - timedelta(days=182.5)
+            if pit_date >= half_year_ago:
+                return True
+            else:
+                return False
+        else:
+            return True
+
     def sync_records(self):
         """ 同步只在工作日同步，节假日不同步 """
         logger.info('SyncScriptDelivery.parse_records => 【开始】同步數據')
@@ -234,26 +248,32 @@ class SyncScriptDeliveryRules(RulesBase):
                 output_nodes = ui_design["outputNodes"]
 
                 input_data = self.get_values_from_input(input_fields=input_fields)
-                output_data = self.get_values_from_output(output_nodes=output_nodes)
-                values = dict(
-                    rid=run_obj.rid, output="",
-                    group_name=team_name, target_ai_score=target_ai_score,
-                    **input_data, **output_data
-                )
+                platform = self._get_platform(input_data.get("src_url"))
+                pit_date = input_data.get("pit_date")
+                is_available = self.is_half_year(pit_date)
 
-                # 重复的过滤: 只要同作者、作品和所属团队 存在的过滤
-                filter_kw = dict(group_name=team_name, author=values['author'], work_name=values["work_name"])
-                is_existed = ScriptDelivery.query.filter_by(**filter_kw).first()
-                if is_existed:
-                    logger.warning("团队: {group_name}, 作者：{author}, 作品: {work_name} 数据已经重复".format(**filter_kw))
-                    continue
+                if is_available:
+                    output_data = self.get_values_from_output(output_nodes=output_nodes)
+                    values = dict(
+                        rid=run_obj.rid, output="",
+                        group_name=team_name, target_ai_score=target_ai_score,
+                        **input_data, **output_data
+                    )
+                    values["platform"] = platform
 
-                # 计算小说所属平台
-                values["platform"] = self._get_platform(values.get("src_url"))
+                    # 重复的过滤: 只要同作者、作品和所属团队 存在的过滤
+                    filter_kw = dict(group_name=team_name, author=values['author'], work_name=values["work_name"])
+                    is_existed = ScriptDelivery.query.filter_by(**filter_kw).first()
+                    if is_existed:
+                        logger.warning("平台：{}， 团队: {group_name}, 作者：{author}, 作品: {work_name} 数据已经重复".format(platform, **filter_kw))
+                        continue
 
-                if float(values.get('ai_score', '0')) >= self._sync_min_ai_score:
-                    ok_results.append(values)
+                    # 计算小说所属平台
 
+                    if float(values.get('ai_score', '0')) >= self._sync_min_ai_score:
+                        ok_results.append(values)
+                else:
+                    logger.warning(f"平台：{platform}，作者：{input_data['author']}, 作品: {input_data['work_name']}的开坑时间不在半年之内，不予推送")
         self.save_db(ok_results=ok_results)
         logger.info('SyncScriptDelivery.parse_records => 【結束】同步數據')
 
