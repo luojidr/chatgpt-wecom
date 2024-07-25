@@ -74,7 +74,7 @@ class AuthorDelivery(BaseModel):
 
     @classmethod
     def get_more_authors_by_batch_id(cls, batch_id):
-        return cls.query.filter_by(batch_id=batch_id, is_delete=False).order_by(cls.is_adapt.desc()).offset(1).all()
+        return cls.query.filter_by(batch_id=batch_id, is_delete=False).order_by(cls.is_adapt.desc()).all()
 
     @classmethod
     def get_running_rids_by_workflow_state(cls, workflow_state):
