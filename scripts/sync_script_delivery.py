@@ -14,6 +14,7 @@ from sqlalchemy.orm import load_only
 
 from scripts.base import RulesBase
 from config import settings
+from wecom.apps.worktool.models.contracted_opus import ContractedOpus
 from wecom.utils.log import logger
 from wecom.apps.worktool.models.script_delivery import ScriptDelivery, OutputDelivery
 from wecom.apps.worktool.models.workflowrunrecord import WorkflowRunRecord
@@ -268,7 +269,11 @@ class SyncScriptDeliveryRules(RulesBase):
                         logger.warning("平台：{}， 团队: {group_name}, 作者：{author}, 作品: {work_name} 数据已经重复".format(platform, **filter_kw))
                         continue
 
-                    # 计算小说所属平台
+                    res = ContractedOpus.query.filter_by(title=values["work_name"], author=values['author']).all()
+                    logger.info(f"ContractedOpus表的查询结果为{res}")
+                    if res:
+                        logger.warning(f"{platform}---{values['author']}---{values['work_name']} 版权已经被采购，不进行发送")
+                        continue
 
                     if float(values.get('ai_score', '0')) >= self._sync_min_ai_score:
                         ok_results.append(values)

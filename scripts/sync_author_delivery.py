@@ -13,6 +13,7 @@ from sqlalchemy.orm import load_only
 
 from scripts.base import RulesBase
 from config import settings, prompts
+from wecom.apps.worktool.models.contracted_opus import ContractedOpus
 from wecom.apps.worktool.models.workflow import Workflow
 from wecom.apps.worktool.models.workflowrunrecord import WorkflowRunRecord
 from wecom.apps.worktool.models.top_author import TopAuthor, db
@@ -191,6 +192,11 @@ class SyncAuthorRules(RulesBase):
                 batch_id = self.get_batch_id(group_name, push_date)
 
                 if group_instance is None:
+                    res = ContractedOpus.query.filter_by(title=work_name, author=author).all()
+                    logger.info(f"ContractedOpus表的查询结果为{res}")
+                    if res:
+                        logger.warning(f"{platform}---{author}---{work_name} 版权已经被采购，不进行发送")
+                        continue
                     llm_result = self.get_author_brief(author, platform)
                     is_exclude, remark = self.exclude_rules_to_teams(group_name, item["theme"])
 
@@ -209,8 +215,8 @@ class SyncAuthorRules(RulesBase):
                         rid=llm_result["rid"], workflow_state=2,
                         is_adapt=llm_result["is_adapt"], is_delete=is_delete,
                     )
-
-                    logger.info(f"团队: {group_name}, 平台: {platform}, 作者: {author}, 作品: {work_name} 已完成同步并入库")
+                    safe_work_name = work_name.encode('gbk', 'replace').decode('gbk')
+                    logger.info(f"团队: {group_name}, 平台: {platform}, 作者: {author}, 作品: {safe_work_name} 已完成同步并入库")
 
                 # # 过滤, 并且相同的工作流只执行一次(注意：是同用户下的具体工作流的执行记录)
                 # rid = self._get_workflow_run_record_id(author, platform)
