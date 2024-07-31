@@ -84,12 +84,10 @@ class SyncAuthorRules(RulesBase):
         is_exclude = False
         theme_list = [s.strip() for s in theme.split("-") if s.strip()]
 
-        # 所有团队，都不需要纯爱类型的头部作者小说（之前仅 辛迪加团队）
+        # 所有团队，都不需要纯爱和百合类型的头部作者小说（之前仅 辛迪加团队）
         # eg: 原创-纯爱-架空历史-仙侠; 原创-纯爱-幻想未来-爱情; 原创-纯爱-近代现代-爱情;......
 
-        if any(["纯爱" == s for s in theme_list]):
-            # 辛迪加团队，不需要纯爱类型的头部作者小说
-            # eg: 原创-纯爱-架空历史-仙侠; 原创-纯爱-幻想未来-爱情; 原创-纯爱-近代现代-爱情;......
+        if any(["纯爱" == s for s in theme_list]) or any(["百合" == s for s in theme_list]):
             is_exclude = True
             remark = f"{group_name}，不需要纯爱类型"
 

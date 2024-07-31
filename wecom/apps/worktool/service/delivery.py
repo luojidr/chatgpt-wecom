@@ -137,7 +137,7 @@ class DeliveryScript:
     def get_templates(self):
         group_data = {}
         results = ScriptDelivery.get_required_script_delivery_list(self._group_name)
-
+        logger.info(f"今天所有待发送的ai推送小说：{results}")
         for group_name, objects in results.items():
             push_dict = group_data.setdefault(group_name, {})
             uniq_ids = push_dict.setdefault("uniq_ids", [])
