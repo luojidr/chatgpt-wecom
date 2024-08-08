@@ -49,7 +49,7 @@ SQLALCHEMY_ECHO = DEBUG
 TIME_ZONE = None
 
 # OpenAI Config
-OPENAI_API_BASE = "http://oneapi.crotondata.cn/v1"
+OPENAI_API_BASE = "https://oneapi.huacemedia.com/v1"
 OPENAI_API_KEY = "sk-XpwEM1Np8oLFlEKB755445CcF06c422290F1D0D6A021977b"
 OPENAI_MODEL = "gpt-4o"
 OPENAI_PROXY = None
