@@ -275,7 +275,7 @@ class SyncScriptDeliveryRules(RulesBase):
                         logger.warning(f"{platform}---{values['author']}---{values['work_name']} 版权已经被采购，不进行发送")
                         continue
 
-                    if float(values.get('ai_score', '0')) >= self._sync_min_ai_score:
+                    if float(values.get('ai_score', '0')) >= self._sync_min_ai_score and values.get("src_url"):
                         ok_results.append(values)
                 else:
                     logger.warning(f"平台：{platform}，作者：{input_data['author']}, 作品: {input_data['work_name']}的开坑时间不在半年之内，不予推送")
