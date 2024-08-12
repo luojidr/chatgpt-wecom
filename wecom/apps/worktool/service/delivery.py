@@ -175,7 +175,7 @@ class DeliveryScript:
         templates = [NewWorkTemplate(**self._get_template_data(obj)) for obj in queryset]
 
         if not templates:
-            content = f"今天没有筛到{ai_score}分的IP"
+            content = f"15天之内没有筛到{ai_score}分的IP"
         else:
             content = NewWorkContentMore(
                 templates, batch_id=queryset[0].batch_id, target_score=ai_score
