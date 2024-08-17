@@ -92,7 +92,7 @@ class MessageReply:
             text_list.append(dict(
                 type=SendType.TEXT.value,
                 titleList=[self.group_remark],
-                receivedContent="@%s\n%s" % (receiver, seg_text)
+                receivedContent="@%s\n%s" % (receiver, seg_text) if self.is_group else seg_text
             ))
 
         payload = dict(socketType=2, list=text_list)
