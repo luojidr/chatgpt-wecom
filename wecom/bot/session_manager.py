@@ -105,8 +105,12 @@ class GroupSessionManager:
         self.session_kwargs = session_kwargs
 
     def _get_session(self, group_name, system_prompt=None):
-        if system_prompt is None:
-            system_prompt = prompts.WT_GROUP_PROMPTS[group_name]
+        # group_name: 群名和用户名混合
+        if group_name in prompts.WT_GROUP_PROMPTS:
+            if system_prompt is None:
+                system_prompt = prompts.WT_GROUP_PROMPTS[group_name]
+        else:
+            system_prompt = prompts.WT_GROUP_PROMPTS["default"]
 
         if group_name not in self.g_sessions:
             self.g_sessions[group_name] = SessionManager(

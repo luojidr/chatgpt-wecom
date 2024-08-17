@@ -73,7 +73,7 @@ def callback_wecom():
 
     if query and receiver:
         _group_name = (group_remark or group_name).strip()
-        MessageReply(group_remark=_group_name).send_text(query, receiver=receiver)
+        MessageReply(group_remark=_group_name, is_group=is_group).send_text(query, receiver=receiver)
 
     return jsonify(msg="ok", status=200, data=None)
 

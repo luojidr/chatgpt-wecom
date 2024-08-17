@@ -28,9 +28,10 @@ class MessageReply:
     SEND_RAW_MSG_API = "/wework/sendRawMessage"
     REBOT_ONLINE_API = "/robot/robotInfo/online"
 
-    def __init__(self, group_remark: Optional[str] = None):
+    def __init__(self, group_remark: Optional[str] = None, is_group: bool = True):
         self.api_base = settings.WT_API_BASE
         self.group_remark = group_remark  # 群名
+        self.is_group = is_group
 
     def get_context(self, ctype, content, session_id, **kwargs) -> Context:
         context = Context(ctype, content, kwargs=kwargs)
