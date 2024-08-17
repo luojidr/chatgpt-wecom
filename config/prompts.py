@@ -3,8 +3,8 @@ DEFAULT_SYSTEM_PROMPT = "您现在是一位多才多艺的AI智能助手，基�
                         "常生活中的任何领域，您都应该尽最大努力给出详尽的答案。"
 
 
-WT_TEST_GROUP_NAME = "有风共创"
 WT_GROUP_PROMPTS = {
-    WT_TEST_GROUP_NAME: DEFAULT_SYSTEM_PROMPT,
+    "智能客服外部群": DEFAULT_SYSTEM_PROMPT,
+    "电影小说天气外部群": DEFAULT_SYSTEM_PROMPT,
 }
 
