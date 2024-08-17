@@ -110,7 +110,7 @@ class GroupSessionManager:
             if system_prompt is None:
                 system_prompt = prompts.WT_GROUP_PROMPTS[group_name]
         else:
-            system_prompt = prompts.WT_GROUP_PROMPTS["default"]
+            system_prompt = prompts.DEFAULT_SYSTEM_PROMPT
 
         if group_name not in self.g_sessions:
             self.g_sessions[group_name] = SessionManager(
