@@ -6,8 +6,8 @@ from datetime import date
 from flask import request
 from flask import render_template
 
-from wecom.apps.worktool.models.author_delivery import AuthorDelivery
-from wecom.apps.worktool.models.script_delivery import ScriptDelivery, OutputDelivery
+from wecom.apps.external_groups.models.author_delivery import AuthorDelivery
+from wecom.apps.external_groups.models.script_delivery import ScriptDelivery, OutputDelivery
 
 
 class RenderTemplate:

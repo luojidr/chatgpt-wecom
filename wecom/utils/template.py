@@ -3,7 +3,7 @@ import re
 from datetime import date
 from typing import List, Optional
 
-from wecom.apps.worktool.models.script_delivery import ScriptDelivery
+from wecom.apps.external_groups.models.script_delivery import ScriptDelivery
 
 
 class TemplateBase:

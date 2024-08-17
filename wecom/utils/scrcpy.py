@@ -11,7 +11,7 @@ from config import settings
 from .reply import MessageReply
 from wecom.utils.log import logger
 from wecom.utils.enums import RebotType
-from wecom.apps.worktool.models.rebot import RebotDetection
+from wecom.apps.external_groups.models.rebot import RebotDetection
 
 
 @retry(stop=stop_after_attempt(max_attempt_number=3))

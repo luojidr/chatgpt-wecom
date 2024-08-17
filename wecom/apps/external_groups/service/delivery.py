@@ -9,10 +9,10 @@ from flask import current_app
 
 from config import settings, prompts
 from wecom.utils.reply import MessageReply
-from wecom.apps.worktool.models.workflowrunrecord import WorkflowRunRecord
-from wecom.apps.worktool.models.author_delivery import AuthorDelivery
-from wecom.apps.worktool.models.script_delivery import ScriptDelivery
-from wecom.apps.worktool.models.rebot import RebotDetection
+from wecom.apps.external_groups.models.workflowrunrecord import WorkflowRunRecord
+from wecom.apps.external_groups.models.author_delivery import AuthorDelivery
+from wecom.apps.external_groups.models.script_delivery import ScriptDelivery
+from wecom.apps.external_groups.models.rebot import RebotDetection
 
 from wecom.utils.log import logger
 from wecom.utils.template import NewWorkTemplate, NewWorkContent, NewWorkContentMore

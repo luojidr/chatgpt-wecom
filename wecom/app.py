@@ -4,7 +4,7 @@ from importlib import import_module
 
 from flask import Flask, render_template
 
-from .apps import user, worktool
+from .apps import user, external_groups
 from .core import commands
 from config import settings
 from wecom.apps.user.models.user import WecomUser
@@ -56,7 +56,7 @@ def register_extensions(app):
 def register_blueprints(app):
     """Register Flask blueprints."""
     app.register_blueprint(user.views.blueprint)
-    app.register_blueprint(worktool.views.blueprint)
+    app.register_blueprint(external_groups.views.blueprint)
 
     # Register celery_helper.beat package
     beat_pkg = import_module(__package__ + ".celery_helper.beat")

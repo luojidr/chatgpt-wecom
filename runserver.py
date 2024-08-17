@@ -27,4 +27,4 @@ if __name__ == '__main__':
     # 2) gunicorn --worker-class=gthread --log-level debug  -w 1 --threads 10  --timeout 120 -b 0.0.0.0:9999
     #    runserver:app -D --access-logfile /path/to/access.log --error-logfile /path/to/error.log
     with app.app_context():
-        app.run(host='0.0.0.0', port=9999, debug=True, use_reloader=True)  # 非命令启动
+        app.run(host='0.0.0.0', port=9899, debug=True, use_reloader=True)  # 非命令启动

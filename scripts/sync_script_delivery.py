@@ -14,10 +14,10 @@ from sqlalchemy.orm import load_only
 
 from scripts.base import RulesBase
 from config import settings
-from wecom.apps.worktool.models.contracted_opus import ContractedOpus
+from wecom.apps.external_groups.models.contracted_opus import ContractedOpus
 from wecom.utils.log import logger
-from wecom.apps.worktool.models.script_delivery import ScriptDelivery, OutputDelivery
-from wecom.apps.worktool.models.workflowrunrecord import WorkflowRunRecord
+from wecom.apps.external_groups.models.script_delivery import ScriptDelivery, OutputDelivery
+from wecom.apps.external_groups.models.workflowrunrecord import WorkflowRunRecord
 
 
 class SyncScriptDeliveryRules(RulesBase):

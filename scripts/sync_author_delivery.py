@@ -13,12 +13,12 @@ from sqlalchemy.orm import load_only
 
 from scripts.base import RulesBase
 from config import settings, prompts
-from wecom.apps.worktool.models.contracted_opus import ContractedOpus
-from wecom.apps.worktool.models.workflow import Workflow
-from wecom.apps.worktool.models.workflowrunrecord import WorkflowRunRecord
-from wecom.apps.worktool.models.top_author import TopAuthor, db
-from wecom.apps.worktool.models.author_retrieval import AuthorRetrieval
-from wecom.apps.worktool.models.author_delivery import AuthorDelivery
+from wecom.apps.external_groups.models.contracted_opus import ContractedOpus
+from wecom.apps.external_groups.models.workflow import Workflow
+from wecom.apps.external_groups.models.workflowrunrecord import WorkflowRunRecord
+from wecom.apps.external_groups.models.top_author import TopAuthor, db
+from wecom.apps.external_groups.models.author_retrieval import AuthorRetrieval
+from wecom.apps.external_groups.models.author_delivery import AuthorDelivery
 from wecom.utils.log import logger
 from wecom.utils.llm import AuthorRetrievalByBingSearch
 

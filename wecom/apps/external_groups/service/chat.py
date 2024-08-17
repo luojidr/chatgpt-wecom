@@ -8,7 +8,7 @@ from config import settings, prompts
 from wecom.utils.log import logger
 from wecom.core.expired_dict import ExpiredDict
 from wecom.bot.chatgpt_session import num_tokens_from_messages
-from wecom.apps.worktool.models.script_delivery import ScriptDelivery
+from wecom.apps.external_groups.models.script_delivery import ScriptDelivery
 
 
 class ChatCompletion:

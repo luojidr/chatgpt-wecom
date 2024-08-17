@@ -7,12 +7,12 @@ from tenacity import retry, stop_after_attempt
 
 from config import prompts
 from wecom.utils.log import logger
-from wecom.apps.worktool.service.chat import ChatCompletion
+from wecom.apps.external_groups.service.chat import ChatCompletion
 
-__all__ = ["AuthorRetrievalByBingSearch"]
+__all__ = ["RetrievalByBingSearch"]
 
 
-class AuthorRetrievalByBingSearch:
+class RetrievalByBingSearch:
     def __init__(self, author: str, platform: str):
         self._author = author
         self._platform = platform
@@ -110,7 +110,7 @@ if __name__ == '__main__':
     data = {'作者': [], '介绍': []}
     results = []
     for author in authors:
-        result = AuthorRetrievalByBingSearch(author, platform).get_invoked_result_by_llm()
+        result = RetrievalByBingSearch(author, platform).get_invoked_result_by_llm()
         llm_content = result["content"]
         brief_pattern = re.compile(r"4、.*?一句话提炼.*?市场表现等的具体亮点.*?：(.*)$", re.M | re.S)
         brief_match = brief_pattern.search(llm_content)
