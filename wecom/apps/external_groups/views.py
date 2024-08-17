@@ -58,11 +58,13 @@ def callback_wecom():
 
     match = re.compile(r"群主:(.*?)$").search(group_name)
     if match is not None:
+        is_group = True
         group_master = match.group(1).strip()
     else:
+        is_group = False
         group_master = settings.WT_GROUP_MASTER
 
-    if not data.get("rawSpoken", "").startswith("@" + group_master):
+    if is_group and not data.get("rawSpoken", "").startswith("@" + group_master):
         logger.info("callback => 未@群主不允许聊天, group_master：%s", group_master)
         return jsonify(msg="群聊消息！", status=200, data=None)
 
