@@ -68,7 +68,7 @@ IMAGE_CREATE_SIZE = "256x256"
 MAX_RETRY_TIMES = 3
 WT_API_BASE = env.str("WT_API_BASE")
 WT_ROBOT_ID = env.str("WT_ROBOT_ID")
-WT_GROUP_MASTER = "元进"
+WT_GROUP_MASTER = "机器人"
 
 MIDDLEWARES = [
     "wecom.core.middlewares.authentication.AuthTokenMiddleware"
