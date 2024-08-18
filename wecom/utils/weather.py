@@ -23,6 +23,7 @@ class Weather:
     def __init__(self, q_city):
         self.q_city = q_city
         self.city_code = None
+        self.get_city_code()
         logger.info(f"查询天气：{q_city}")
 
     def get_city_code(self):
