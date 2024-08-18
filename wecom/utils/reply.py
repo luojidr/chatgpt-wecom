@@ -44,14 +44,18 @@ class MessageReply:
 
     def get_reply(self, query: str, session_id: str):
         context: Context = self.get_context(
-            ctype=ContextType.TEXT,
+            ctype=ContextType.IMAGE_CREATE if query.startswith("画") else ContextType.TEXT,
             content=query,
             session_id=session_id,
             group_remark=self.group_remark
         )
 
         if self.group_remark == "天气查询外部群":
-            reply = Reply(type=ReplyType.TEXT, content=Weather(query).get_weather())
+            weather = Weather(query)
+            if weather.is_weather:
+                reply = Reply(type=ReplyType.TEXT, content=weather.get_weather())
+            else:
+                reply: Reply = self.bot.reply(query=query, context=context)
         else:
             reply: Reply = self.bot.reply(query=query, context=context)
 

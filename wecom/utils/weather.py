@@ -22,15 +22,18 @@ class Weather:
 
     def __init__(self, q_city):
         self.q_city = q_city
+        self._city_code = self.get_city_code()
         logger.info(f"查询天气：{q_city}")
 
-    @property
-    def city_code(self):
+    def get_city_code(self):
         if not self.CITY_CODE_MAPPING:
             url = "https://j.i8tq.com/weather2020/search/city.js"
             res = session.get(url, headers={"Host": "j.i8tq.com", "Referer": "https://www.weather.com.cn/"})
             text = res.content.decode("utf-8").replace("var city_data =", "").strip()
             self.CITY_CODE_MAPPING = json.loads(text)
+
+        if self._city_code:
+            return self._city_code
 
         q = deque([value for city, value in self.CITY_CODE_MAPPING.items()])
         while q:
@@ -41,7 +44,9 @@ class Weather:
                 if node["NAMECN"] in self.q_city:
                     return node["AREAID"]
 
-        raise ValueError("没有找到对应的城市")
+    @property
+    def is_weather(self):
+        return bool(self._city_code)
 
     def get_temperature(self):
         city_code = self.city_code
