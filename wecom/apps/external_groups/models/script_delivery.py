@@ -125,14 +125,24 @@ class ScriptDelivery(BaseModel):
         return cls.query.filter_by(**kwargs).first()
 
     @classmethod
-    def get_required_script_delivery_list(cls, group_name: str = None):
+    def get_required_script_delivery_list(cls, group_name: Optional[str] = None):
         results = {}
-        push_date = date.today().strftime("%Y-%m-%d")
-        kwargs = dict(push_date=push_date, is_pushed=False, is_delete=False)
-        group_name and kwargs.update(group_name=group_name)
+        # push_date = date.today().strftime("%Y-%m-%d")
+        # kwargs = dict(push_date=push_date, is_pushed=False, is_delete=False)
+        # kwargs = dict(is_pushed=False, is_delete=False)
+        # group_name and kwargs.update(group_name=group_name)
+        # queryset = cls.query.filter_by(**kwargs).limit(100).all()
 
-        queryset = cls.query.filter_by(**kwargs).filter(cls.retry_times < 2).all()
+        ids = []
+        author_book_set = set()
+        _queryset = cls.query.options(load_only(cls.id, cls.author, cls.work_name)).all()
+        for obj in _queryset:
+            key = (obj.author, obj.work_name)
+            if key not in author_book_set:
+                author_book_set.add(key)
+                ids.append(obj.id)
 
+        queryset = cls.query.filter(cls.id.in_(random.choices(ids, k=1))).limit(1).all()
         # for group_name, objects in groupby(queryset, key=attrgetter("group_name")):
         for obj in queryset:
             results.setdefault(obj.group_name, []).append(obj)

@@ -1,3 +1,4 @@
+import os
 import time
 
 import openai
@@ -14,6 +15,12 @@ class OpenAIImage(object):
         if settings.DALLE_RATE_LIMIT:
             self.tb4dalle = TokenBucket(settings.DALLE_RATE_LIMIT or 20)
 
+        self.client = openai.AzureOpenAI(
+            api_version="2022-08-03-preview",
+            api_key=os.environ["OPENAI_API_KEY"],
+            base_url=os.environ["OPENAI_API_BASE"],
+        )
+
     def create_img(self, query, retry_count=0, api_key=None, api_base=None):
         revised_prompt = None
 
@@ -22,8 +29,7 @@ class OpenAIImage(object):
                 return False, "请求太快了，请休息一下再问我吧"
 
             logger.info("[OPEN_AI] image_query={}".format(query))
-            response = openai.Image.create(
-                api_key=api_key,
+            response = self.client.images.generate(
                 prompt=query,  # 图片描述
                 n=1,  # 每次生成图片的数量
                 model=settings.TEXT_TO_IMAGE or "dall-e-2",

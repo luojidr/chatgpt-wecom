@@ -39,6 +39,30 @@ def download(filename):
     return send_from_directory(static_path, filename, as_attachment=True)
 
 
+@blueprint.route("/push", methods=["POST"])
+def push_message():
+    is_online = MessageReply().get_rebot_status()
+    if not is_online:
+        return jsonify(msg="rebot is offline", status=5003, data=None)
+
+    params = request.args
+    push_type = params.get("push_type")
+    team_name = params.get("team_name")
+
+    assert push_type in ["ai", "top_author"], "推送类型错误"
+    logger.info("push_message => path: %s, params: %s", request.path, params)
+
+    if push_type == "ai":
+        target_func = delivery.DeliveryScript().push
+    else:
+        group_name = prompts.WT_TEST_GROUP_NAME if team_name == "wind" else None
+        target_func = delivery.DeliveryAuthor(group_name=group_name).push
+
+    t = threading.Thread(target=target_func, args=(current_app._get_current_object(), ))
+    t.start()
+    return jsonify(msg="ok", status=200, data=None)
+
+
 @blueprint.route('/callback', methods=['POST'])
 def callback_wecom():
     # args: request.args
@@ -90,3 +114,8 @@ def chat_completions():
         stream_with_context(chat.ChatCompletion(**chat_kwargs).stream_generator()),
         content_type='text/event-stream'
     )
+
+
+@blueprint.route('/evaluation', methods=['GET'])
+def ai_evaluation_detail():
+    return render.RenderTemplate("wecom/evaluation_detail.html").render()

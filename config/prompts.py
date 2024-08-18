@@ -6,5 +6,6 @@ DEFAULT_SYSTEM_PROMPT = "您现在是一位多才多艺的AI智能助手，基�
 WT_GROUP_PROMPTS = {
     "智能客服外部群": DEFAULT_SYSTEM_PROMPT,
     "天气查询外部群": DEFAULT_SYSTEM_PROMPT,
+    "小说定时推送部群": DEFAULT_SYSTEM_PROMPT,
 }
 

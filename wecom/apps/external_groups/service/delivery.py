@@ -150,7 +150,7 @@ class DeliveryScript:
         return group_data
 
     def push(self, app, g_name: str = None, incr: bool = False):
-        time.sleep(random.randint(4, 10))
+        # time.sleep(random.randint(4, 10))
 
         with app.app_context():
             group_data = self.get_templates()
