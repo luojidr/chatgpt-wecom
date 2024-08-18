@@ -9,14 +9,13 @@ from config import settings
 
 
 # OPENAI提供的画图接口
-class OpenAIImage(object):
+class OpenAIImage:
     def __init__(self):
         self.api_key = settings.OPENAI_API_KEY
         if settings.DALLE_RATE_LIMIT:
             self.tb4dalle = TokenBucket(settings.DALLE_RATE_LIMIT or 20)
 
-        self.client = openai.AzureOpenAI(
-            api_version="2022-08-03-preview",
+        self.client = openai.OpenAI(
             api_key=os.environ["OPENAI_API_KEY"],
             base_url=os.environ["OPENAI_API_BASE"],
         )
@@ -35,8 +34,9 @@ class OpenAIImage(object):
                 model=settings.TEXT_TO_IMAGE or "dall-e-2",
                 # size=settings.IMAGE_CREATE_SIZE or "256x256",  # 图片大小,可选有 256x256, 512x512, 1024x1024
             )
-            image_url = response["data"][0]["url"]
-            revised_prompt = response["data"][0]["revised_prompt"]
+            image_data = response.data
+            image_url = image_data[0].url
+            revised_prompt = image_data[0].revised_prompt
 
             logger.info("[OPEN_AI] image_url={}".format(image_url))
             return True, image_url, revised_prompt
