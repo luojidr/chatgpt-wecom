@@ -25,7 +25,7 @@ else
 fi
 
 # 启动 gunicorn 服务器
-./venv/bin/gunicorn --worker-class=gthread --log-level debug -w 1 --threads 10 --timeout 120 -b 0.0.0.0:9999 runserver:app -D --access-logfile /root/work/chatgpt-wecom/logs/access.log --error-logfile /root/work/chatgpt-wecom/logs/error.log
+../venv/bin/gunicorn --worker-class=gthread --log-level debug -w 1 --threads 10 --timeout 120 -b 0.0.0.0:9999 runserver:app -D --access-logfile /root/work/chatgpt-wecom/logs/access.log --error-logfile /root/work/chatgpt-wecom/logs/error.log
 
 # 检查是否启动成功，并给予提示
 if [ $? -eq 0 ]; then
