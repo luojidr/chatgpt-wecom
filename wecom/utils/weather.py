@@ -69,7 +69,7 @@ class Weather:
             leval_name = node.find("em").text()
             abbr = node.find("span").text()
             info = node.find("p").text()
-            data.append(f"{leval_name}：{abbr} | {info}")
+            data.append(f"{leval_name}：{abbr}\n  {info}\n")
 
         return "\n".join(data)
 
