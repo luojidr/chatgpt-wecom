@@ -4,6 +4,8 @@ import requests
 from collections import deque
 from pyquery import PyQuery
 
+from wecom.utils.log import logger
+
 session = requests.Session()
 session.headers.update({
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -20,6 +22,7 @@ class Weather:
 
     def __init__(self, q_city):
         self.q_city = q_city
+        logger.info(f"查询天气：{q_city}")
 
     @property
     def city_code(self):
@@ -72,7 +75,10 @@ class Weather:
 
     def get_weather(self):
         try:
-            return self.get_temperature() + "\n\n" + self.get_other_info()
+            info = self.get_temperature() + "\n\n" + self.get_other_info()
+            logger.info(f"查询天气成功: {info}")
+
+            return info
         except Exception as e:
             return str(e)
 
