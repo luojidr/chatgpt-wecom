@@ -51,7 +51,7 @@ class MessageReply:
         )
 
         if self.group_remark == "天气查询外部群":
-            reply = Reply(Weather(query).get_weather())
+            reply = Reply(type=ReplyType.TEXT, content=Weather(query).get_weather())
         else:
             reply: Reply = self.bot.reply(query=query, context=context)
 
