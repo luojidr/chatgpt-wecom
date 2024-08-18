@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # 设置环境变量
-export APP_ENV=PROD
+export APP_ENV=DEV
 
 # 检查是否有正在运行的 gunicorn 服务
 PIDS=$(pgrep -f 'runserver:app')
