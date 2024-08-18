@@ -20,7 +20,7 @@ from wecom.apps.external_groups.models.top_author import TopAuthor, db
 from wecom.apps.external_groups.models.author_retrieval import AuthorRetrieval
 from wecom.apps.external_groups.models.author_delivery import AuthorDelivery
 from wecom.utils.log import logger
-from wecom.utils.llm import AuthorRetrievalByBingSearch
+from wecom.utils.llm import RetrievalByBingSearch
 
 
 class SyncAuthorRules(RulesBase):

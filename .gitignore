@@ -11,3 +11,4 @@ logs/
 tests/
 staticfiles/
 app.log
+.eggs/

@@ -10,6 +10,7 @@ from tenacity import retry, stop_after_attempt
 from config import settings
 from wecom.utils.log import logger
 from wecom.utils.utils import split_long_text_by_sentences
+from wecom.utils.weather import Weather
 from wecom.bot.chatgpt_bot import ChatGPTBot
 from wecom.bot.context import Context, ContextType, Reply
 
@@ -48,7 +49,11 @@ class MessageReply:
             session_id=session_id,
             group_remark=self.group_remark
         )
-        reply: Reply = self.bot.reply(query=query, context=context)
+
+        if self.group_remark == "天气查询外部群":
+            reply = Reply(Weather(query).get_weather())
+        else:
+            reply: Reply = self.bot.reply(query=query, context=context)
 
         return reply
 
