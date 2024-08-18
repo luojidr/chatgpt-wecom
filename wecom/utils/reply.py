@@ -12,7 +12,7 @@ from wecom.utils.log import logger
 from wecom.utils.utils import split_long_text_by_sentences
 from wecom.utils.weather import Weather
 from wecom.bot.chatgpt_bot import ChatGPTBot
-from wecom.bot.context import Context, ContextType, Reply
+from wecom.bot.context import Context, ContextType, Reply, ReplyType
 
 
 class SendType(Enum):
