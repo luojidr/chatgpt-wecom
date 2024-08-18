@@ -55,7 +55,7 @@ class Weather:
         temp = info["temp"] + "℃"
         wind = info["WD"] + "：" + info["WS"]
         sd = "相对湿度：" + info["SD"]
-        return f"{city} {date}\n温度：{temp}  {wind}  {sd}"
+        return f"{city} {date}\n温度：{temp}\n{wind}\n{sd}"
 
     def get_other_info(self):
         data = []
@@ -69,7 +69,7 @@ class Weather:
             leval_name = node.find("em").text()
             abbr = node.find("span").text()
             info = node.find("p").text()
-            data.append(f"{leval_name}：{abbr}\n  {info}\n")
+            data.append(f"{leval_name}：{abbr}\n{info}\n")
 
         return "\n".join(data)
 
