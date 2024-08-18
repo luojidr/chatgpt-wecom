@@ -22,7 +22,7 @@ class Weather:
 
     def __init__(self, q_city):
         self.q_city = q_city
-        self._city_code = self.get_city_code()
+        self.city_code = None
         logger.info(f"查询天气：{q_city}")
 
     def get_city_code(self):
@@ -32,8 +32,8 @@ class Weather:
             text = res.content.decode("utf-8").replace("var city_data =", "").strip()
             self.CITY_CODE_MAPPING = json.loads(text)
 
-        if self._city_code:
-            return self._city_code
+        if self.city_code:
+            return self.city_code
 
         q = deque([value for city, value in self.CITY_CODE_MAPPING.items()])
         while q:
@@ -42,11 +42,11 @@ class Weather:
                 q.extend([v for k, v in node.items()])
             else:
                 if node["NAMECN"] in self.q_city:
-                    return node["AREAID"]
+                    self.city_code = node["AREAID"]
 
     @property
     def is_weather(self):
-        return bool(self._city_code)
+        return bool(self.city_code)
 
     def get_temperature(self):
         city_code = self.city_code
