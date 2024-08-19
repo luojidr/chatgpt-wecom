@@ -1,4 +1,5 @@
 import json
+import uuid
 import traceback
 from enum import Enum
 from typing import List, Dict, Any, Optional
@@ -108,7 +109,7 @@ class MessageReply:
             if reply.type.value == ContextType.IMAGE_CREATE.value:
                 text_list.append(dict(
                     type=SendType.IMG_VIDEO_FILE.value,
-                    objectName="sample.png",
+                    objectName=f"{str(uuid.uuid1())}.png",
                     titleList=[self.group_remark],
                     fileType="image",
                     fileUrl=seg_text
