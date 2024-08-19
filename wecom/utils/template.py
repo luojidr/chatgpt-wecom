@@ -39,7 +39,7 @@ class TemplateBase:
 
     @property
     def title(self):
-        push_date = date.today().strftime("%m-%d")
+        push_date = date.today().strftime("%H-%M-%S")
         return self._title.format(push_date=push_date)
 
     def get_text(self, fmt_text, fmt_kwargs):
