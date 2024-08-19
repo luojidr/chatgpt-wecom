@@ -1,6 +1,6 @@
 import os
 import re
-from datetime import date
+from datetime import date, datetime
 from typing import List, Optional
 
 from wecom.apps.external_groups.models.script_delivery import ScriptDelivery
@@ -39,7 +39,7 @@ class TemplateBase:
 
     @property
     def title(self):
-        push_date = date.today().strftime("%H:%M:%S")
+        push_date = datetime.now().strftime("%H:%M:%S")
         return self._title.format(push_date=push_date)
 
     def get_text(self, fmt_text, fmt_kwargs):
