@@ -91,9 +91,7 @@ class NewWorkContent(TemplateBase):
         {order}题材类型：{theme}
         {order}核心亮点：{core_highlight}
         {order}核心创意：{core_idea}
-        {order}开坑时间：{pit_date}
-        {order}AI评分：{ai_score}
-          评分链接：{detail_url}
+        {order}AI评分链接：{detail_url}
         {order}出处链接：{src_url}
         {order}平台：{platform}
     """
